@@ -97,8 +97,9 @@ public class TodoManager {
             return;
         }
 
-        for (Todo todo : todobydate) {
-            System.out.println(todo.getId()+"."+todo.getContent()+" | "+todo.getDate().toLocalTime()+" | "+(todo.isDone() ? "완료" : "미완료")+" | "+todo.getProjectTags());
+        for (int i=0; i<todobydate.size(); i++) {
+            Todo todo = todobydate.get(i);
+            System.out.println((i+1)+"."+todo.getContent()+" | "+todo.getDate().toLocalTime()+" | "+(todo.isDone() ? "완료" : "미완료")+" | "+todo.getProjectTags());
         }
     }
 
@@ -114,44 +115,14 @@ public class TodoManager {
     }
 
     public void changeStatus() {
-        System.out.print("변경할 할 일 이름을 입력하세요: ");
-        String word = scanner.nextLine().trim();
+        Todo selectedTodo = selectTodo("상태 변경할 ");
 
-        if (word.isEmpty()) {
-            System.out.println("검색어를 입력하세요.");
+        if (selectedTodo == null) {
             return;
         }
 
-        List<Todo> result = searchTodo(word);
-
-        if (result.isEmpty()) {
-            System.out.println("검색된 할 일이 없습니다.");
-            return;
-        }
-
-        for (int i=0; i<result.size(); i++) {
-            Todo todo = result.get(i);
-            System.out.println((i+1)+"."+todo.getContent()+" | "+todo.getDate()+" | "+(todo.isDone() ? "완료" : "미완료"));
-        }
-
-        System.out.print("상태 변경할 할 일 번호: ");
-
-        int number;
-
-        try {
-            number = Integer.parseInt(scanner.nextLine());
-        } catch (NumberFormatException e) {
-            System.out.print("숫자를 입력하세요");
-            return;
-        }
-
-        if (number < 1 || number > result.size()) {
-            System.out.println("잘못된 번호입니다");
-            return;
-        }
-
-        Todo selectedTodo = result.get(number-1);
         selectedTodo.setDone(!selectedTodo.isDone());
+
         System.out.println("할 일 상태 변경이 완료되었습니다");
         System.out.println("변경 내용");
         System.out.println(selectedTodo.getContent()+" | "+selectedTodo.getDate()+" | "+(selectedTodo.isDone() ? "완료" : "미완료"));
@@ -213,85 +184,24 @@ public class TodoManager {
     }
 
     public void deleteTodo() {
-        System.out.print("삭제할 할 일 이름을 입력하세요: ");
-        String word = scanner.nextLine().trim();
+        Todo selectedTodo = selectTodo("삭제할 ");
 
-        if (word.isEmpty()) {
-            System.out.println("검색어를 입력하세요.");
+        if (selectedTodo == null) {
             return;
         }
 
-        List<Todo> result = searchTodo(word);
-
-        if (result.isEmpty()) {
-            System.out.println("검색된 할 일이 없습니다.");
-            return;
-        }
-
-        for (int i=0; i<result.size(); i++) {
-            Todo todo = result.get(i);
-            System.out.println((i+1)+"."+todo.getContent()+" | "+todo.getDate()+" | "+(todo.isDone() ? "완료" : "미완료"));
-        }
-
-        System.out.print("삭제할 할 일 번호: ");
-
-        int number;
-
-        try {
-            number = Integer.parseInt(scanner.nextLine());
-        } catch (NumberFormatException e) {
-            System.out.print("숫자를 입력하세요");
-            return;
-        }
-
-        if (number < 1 || number > result.size()) {
-            System.out.println("잘못된 번호입니다");
-            return;
-        }
-
-        Todo selectedTodo = result.get(number-1);
         todoList.remove(selectedTodo);
         System.out.println("할 일 삭제가 완료되었습니다");
+        System.out.println("삭제 내용: " + selectedTodo.getContent());
     }
 
     public void updateTodo() {
-        System.out.print("수정할 할 일 이름을 입력하세요: ");
-        String word = scanner.nextLine().trim();
+        Todo selectedTodo = selectTodo("수정할 ");
 
-        if (word.isEmpty()) {
-            System.out.println("검색어를 입력하세요.");
+        if (selectedTodo == null) {
             return;
         }
 
-        List<Todo> result = searchTodo(word);
-
-        if (result.isEmpty()) {
-            System.out.println("검색된 할 일이 없습니다.");
-            return;
-        }
-
-        for (int i=0; i<result.size(); i++) {
-            Todo todo = result.get(i);
-            System.out.println((i+1)+"."+todo.getContent()+" | "+todo.getDate()+" | "+(todo.isDone() ? "완료" : "미완료"));
-        }
-
-        System.out.print("수정할 할 일 번호: ");
-
-        int number;
-
-        try {
-            number = Integer.parseInt(scanner.nextLine());
-        } catch (NumberFormatException e) {
-            System.out.print("숫자를 입력하세요");
-            return;
-        }
-
-        if (number < 1 || number > result.size()) {
-            System.out.println("잘못된 번호입니다");
-            return;
-        }
-
-        Todo selectedTodo = result.get(number-1);
         System.out.println("----- 수정할 항목 선택 -----");
         System.out.println("1) 할 일 내용 2) 날짜 및 시간 3) 태그 4) 수정 취소");
         System.out.print("선택 : ");
@@ -348,5 +258,38 @@ public class TodoManager {
                 + " | " + selectedTodo.getDate()
                 + " | " + selectedTodo.getProjectTags()
                 + " | " + (selectedTodo.isDone() ? "완료" : "미완료"));
+    }
+
+    private Todo selectTodo(String message) {
+        List<Todo> result = getTodo(currentDate);
+
+        if (result.isEmpty()) {
+            System.out.println("현재 날짜에 할 일이 없습니다");
+            return null;
+        }
+
+        while (true) {
+            System.out.print(message+ "할 일 번호 (취소는 0 입력) : ");
+            int number;
+
+            try {
+                number = Integer.parseInt(scanner.nextLine().trim());
+            } catch (NumberFormatException e) {
+                System.out.println("숫자를 입력하세요");
+                continue;
+            }
+
+            if (number == 0) {
+                System.out.println("선택을 취소했습니다");
+                return null;
+            }
+
+            if (number < 1 || number > result.size()) {
+                System.out.println("잘못된 번호입니다. 다시 입력하세요");
+                continue;
+            }
+
+            return result.get(number-1);
+        }
     }
 }
