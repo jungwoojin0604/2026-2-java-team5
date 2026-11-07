@@ -116,6 +116,12 @@ public class TodoManager {
     public void changeStatus() {
         System.out.print("변경할 할 일 이름을 입력하세요: ");
         String word = scanner.nextLine().trim();
+
+        if (word.isEmpty()) {
+            System.out.println("검색어를 입력하세요.");
+            return;
+        }
+
         List<Todo> result = searchTodo(word);
 
         if (result.isEmpty()) {
@@ -204,5 +210,143 @@ public class TodoManager {
             }
         }
         return result;
+    }
+
+    public void deleteTodo() {
+        System.out.print("삭제할 할 일 이름을 입력하세요: ");
+        String word = scanner.nextLine().trim();
+
+        if (word.isEmpty()) {
+            System.out.println("검색어를 입력하세요.");
+            return;
+        }
+
+        List<Todo> result = searchTodo(word);
+
+        if (result.isEmpty()) {
+            System.out.println("검색된 할 일이 없습니다.");
+            return;
+        }
+
+        for (int i=0; i<result.size(); i++) {
+            Todo todo = result.get(i);
+            System.out.println((i+1)+"."+todo.getContent()+" | "+todo.getDate()+" | "+(todo.isDone() ? "완료" : "미완료"));
+        }
+
+        System.out.print("삭제할 할 일 번호: ");
+
+        int number;
+
+        try {
+            number = Integer.parseInt(scanner.nextLine());
+        } catch (NumberFormatException e) {
+            System.out.print("숫자를 입력하세요");
+            return;
+        }
+
+        if (number < 1 || number > result.size()) {
+            System.out.println("잘못된 번호입니다");
+            return;
+        }
+
+        Todo selectedTodo = result.get(number-1);
+        todoList.remove(selectedTodo);
+        System.out.println("할 일 삭제가 완료되었습니다");
+    }
+
+    public void updateTodo() {
+        System.out.print("수정할 할 일 이름을 입력하세요: ");
+        String word = scanner.nextLine().trim();
+
+        if (word.isEmpty()) {
+            System.out.println("검색어를 입력하세요.");
+            return;
+        }
+
+        List<Todo> result = searchTodo(word);
+
+        if (result.isEmpty()) {
+            System.out.println("검색된 할 일이 없습니다.");
+            return;
+        }
+
+        for (int i=0; i<result.size(); i++) {
+            Todo todo = result.get(i);
+            System.out.println((i+1)+"."+todo.getContent()+" | "+todo.getDate()+" | "+(todo.isDone() ? "완료" : "미완료"));
+        }
+
+        System.out.print("수정할 할 일 번호: ");
+
+        int number;
+
+        try {
+            number = Integer.parseInt(scanner.nextLine());
+        } catch (NumberFormatException e) {
+            System.out.print("숫자를 입력하세요");
+            return;
+        }
+
+        if (number < 1 || number > result.size()) {
+            System.out.println("잘못된 번호입니다");
+            return;
+        }
+
+        Todo selectedTodo = result.get(number-1);
+        System.out.println("----- 수정할 항목 선택 -----");
+        System.out.println("1) 할 일 내용 2) 날짜 및 시간 3) 태그 4) 수정 취소");
+        System.out.print("선택 : ");
+        String choice = scanner.nextLine();
+
+        switch (choice) {
+            case "1":
+                System.out.print("수정할 내용을 입력하세요: ");
+                String newContent = scanner.nextLine().trim();
+                if (newContent.isEmpty()) {
+                    System.out.println("할 일 내용을 입력하세요");
+                    return;
+                }
+                selectedTodo.setContent(newContent);
+                break;
+
+            case "2":
+                DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
+                System.out.print("수정할 날짜 및 시간을 아래 형식과 같이 입력하세요 (yyyy-MM-dd HH:mm) : ");
+                String inputDate = scanner.nextLine().trim();
+                try {
+                    LocalDateTime newDate = LocalDateTime.parse(inputDate, formatter);
+                    selectedTodo.setDate(newDate);
+                } catch (DateTimeException e) {
+                    System.out.println("날짜 형식이 잘못되었습니다");
+                    return;
+                }
+                break;
+
+            case "3":
+                System.out.println("태그 여러 개를 한 번에 수정이 가능합니다. 쉼표를 사용해 입력하세요");
+                System.out.print("수정할 태그를 입력하세요: ");
+                String inputTag = scanner.nextLine();
+                List<String> newTag = new ArrayList<>();
+                for(String tag : inputTag.split(",")) {
+                    if (!tag.trim().isEmpty()) {
+                        newTag.add(tag.trim());
+                    }
+                }
+                selectedTodo.setProjectTags(newTag);
+                break;
+
+            case "4":
+                System.out.println("수정을 취소합니다");
+                return;
+
+            default:
+                System.out.println("잘못된 선택입니다");
+                return;
+        }
+        System.out.println("할 일 수정이 완료되었습니다");
+        System.out.println("수정 내용");
+        System.out.println(selectedTodo.getContent()
+                + " | " + selectedTodo.getDate()
+                + " | " + selectedTodo.getProjectTags()
+                + " | " + (selectedTodo.isDone() ? "완료" : "미완료"));
     }
 }
