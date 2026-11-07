@@ -10,12 +10,31 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Scanner;
 
+/**
+ * 할 일의 등록, 조회, 수정, 삭제, 완료 상태 관리하는 클래스 (TodoManager)
+ *
+ * <p>전체 할 일은 todoList에 저장 후
+ * currentDate 기준으로 날짜별 조회와 필터링을 진행한다. </p>
+ *
+ * <p>할 일의 수정, 삭제, 완료 상태 변경은
+ * 현재 선택된 날짜의 목록 번호를 기준으로 처리한다.</p>
+ */
 public class TodoManager {
-    private Scanner scanner;
-    private List<Todo> todoList; //todo 보관 list
+    private final Scanner scanner;
+    private final List<Todo> todoList; //todo 보관 list
     private int nextId;
     private LocalDate currentDate;
 
+    /**
+     * TodoManager 객체 생성
+     *
+     * <p>
+     * - 할 일 목록 초기화
+     * - 다음 할 일 id 1로 설정
+     * - 조회 기준 날짜를 현재 날짜로 설정</p>
+     *
+     * @param scanner 사용자 입력에 사용할 Scanner 객체
+     */
     public TodoManager(Scanner scanner) {
         this.scanner = scanner; //scanner 작업은 이걸로 통일
         this.todoList = new ArrayList<>();
@@ -23,19 +42,28 @@ public class TodoManager {
         this.currentDate = LocalDate.now();
     }
 
+    /**
+     * 새로운 할 일 생성 후 전체 할 일 목록에 등록하는 메소드
+     *
+     * <p>할 일에 nextId를 고유 id로 부여, 등록 후 nextId 1 증가</p>
+     *
+     * @param content 등록할 할 일 내용
+     * @param date 등록할 할 일의 날짜 및 시간
+     * @param projectTags 등록할 할 일의 태그 목록
+     */
     public void addTodo(String content, LocalDateTime date, List<String> projectTags) {
         Todo todo = new Todo(nextId, content, date, projectTags);
         todoList.add(todo);
         nextId++;
-
-        //테스트용 출력
-        System.out.println("등록된 ID: " + todo.getId());
-        System.out.println("할 일: " + todo.getContent());
-        System.out.println("날짜: " + todo.getDate());
-        System.out.println("태그: " + todo.getProjectTags());
-        System.out.println("목록 크기: " + todoList.size());
     }
 
+    /**
+     * 사용자로부터 할 일 정보 입력받아 등록하는 메소드
+     *
+     * <p>할 일 내용, 날짜 및 시간, 프로젝트 태그 순서대로 입력받기</p>
+     *
+     * <p>할 일 내용 비어있거나 날짜 입력이 유효하지 않으면 다시 입력받고, 태그는 쉼표로 구분</p>
+     */
     public void inputTodo() {
         String content;
         while (true) {
@@ -78,6 +106,12 @@ public class TodoManager {
         addTodo(content, date, projectTags);
     }
 
+    /**
+     * 지정한 날짜에 등록한 할 일 목록 조회하는 메소드
+     *
+     * @param date 조회할 날짜
+     * @return 해당 날짜의 할 일 목록
+     */
     public List<Todo> getTodo(LocalDate date) {
         List<Todo> result = new ArrayList<>();
 
@@ -89,6 +123,13 @@ public class TodoManager {
         return result;
     }
 
+    /**
+     * 현재 선택된 날짜의 할 일 목록 출력하는 메소드
+     *
+     * <p>할 일의 목록 번호, 내용, 시간, 완료 여부, 프로젝트 태그 출력</p>
+     *
+     * <p>목록 번호 1부터 시작 (할 일의 고유 id와는 별개)</p>
+     */
     public void showTodo() {
         List<Todo> todobydate = getTodo(currentDate);
         System.out.println("----- "+currentDate+" 할 일 목록 -----");
@@ -103,31 +144,13 @@ public class TodoManager {
         }
     }
 
-    public List<Todo> searchTodo(String word) {
-        List<Todo> result = new ArrayList<>();
-
-        for (Todo todo : todoList) {
-            if (todo.getContent().contains(word.trim())) {
-                result.add(todo);
-            }
-        }
-        return result;
-    }
-
-    public void changeStatus() {
-        Todo selectedTodo = selectTodo("상태 변경할 ");
-
-        if (selectedTodo == null) {
-            return;
-        }
-
-        selectedTodo.setDone(!selectedTodo.isDone());
-
-        System.out.println("할 일 상태 변경이 완료되었습니다");
-        System.out.println("변경 내용");
-        System.out.println(selectedTodo.getContent()+" | "+selectedTodo.getDate()+" | "+(selectedTodo.isDone() ? "완료" : "미완료"));
-    }
-
+    /**
+     * 할 일 조회할 때 기준이 되는 날짜 변경하는 메소드
+     *
+     * <p>어제, 내일, 직접 입력한 날짜로 currentDate 변경</p>
+     *
+     * <p>날짜 변경 후 할 일 목록은 showTodo() 별도로 호출해야함 (날짜 변경 후 할 일 목록 자동 출력 X)</p>
+     */
     public void moveDate() {
         System.out.println("----- 날짜 이동 -----");
         System.out.println("1) 어제 2) 내일 3) 날짜 직접 입력");
@@ -157,14 +180,20 @@ public class TodoManager {
                 System.out.println("잘못된 선택입니다");
                 return;
         }
-
-        showTodo();
     }
 
+    /**
+     * 현재 선택된 날짜에서 지정한 태그 가진 할 일 조회하는 메소드
+     *
+     * <p>currentDate 기준으로 검색</p>
+     *
+     * @param tag 검색할 태그
+     * @return 현재 날짜에서 해당 태그를 가진 할 일 목록
+     */
     public List<Todo> getTodoByTag(String tag) {
         List<Todo> result = new ArrayList<>();
 
-        for (Todo todo : todoList) {
+        for (Todo todo : getTodo(currentDate)) {
             if (todo.getProjectTags().contains(tag.trim())) {
                 result.add(todo);
             }
@@ -172,10 +201,16 @@ public class TodoManager {
         return result;
     }
 
+    /**
+     * 현재 선택한 날짜에서 완료 상태에 따라 할 일 조회할 수 있는 메소드
+     *
+     * @param done true면 완료, false면 미완료
+     * @return 현재 날짜에서 각 상태에 해당하는 할 일 목록
+     */
     public List<Todo> getTodoByStatus(boolean done) {
         List<Todo> result = new ArrayList<>();
 
-        for (Todo todo : todoList) {
+        for (Todo todo : getTodo(currentDate)) {
             if (todo.isDone() == done) {
                 result.add(todo);
             }
@@ -183,6 +218,34 @@ public class TodoManager {
         return result;
     }
 
+    /**
+     * 사용자가 선택한 할 일의 완료 상태 변경하는 메소드
+     *
+     * <p>현재 날짜의 목록 번호로 할 일 선택 후 완료 상태를 현재의 반대로 전환</p>
+     *
+     * <p>선택 취소 또는 할 일 없으면 변경 X</p>
+     */
+    public void changeStatus() {
+        Todo selectedTodo = selectTodo("상태 변경할 ");
+
+        if (selectedTodo == null) {
+            return;
+        }
+
+        selectedTodo.setDone(!selectedTodo.isDone());
+
+        System.out.println("할 일 상태 변경이 완료되었습니다");
+        System.out.println("변경 내용");
+        System.out.println(selectedTodo.getContent()+" | "+selectedTodo.getDate()+" | "+(selectedTodo.isDone() ? "완료" : "미완료"));
+    }
+
+    /**
+     * 사용자가 선택한 할 일 삭제하는 메소드
+     *
+     * <p>현재 날짜의 목록 번호로 할 일 선택 후 전체 할 일 목록(todoList)에서 해당 객체 제거</p>
+     *
+     * <p>선택을 취소하거나 할 일이 없으면 삭제 X</p>
+     */
     public void deleteTodo() {
         Todo selectedTodo = selectTodo("삭제할 ");
 
@@ -195,6 +258,13 @@ public class TodoManager {
         System.out.println("삭제 내용: " + selectedTodo.getContent());
     }
 
+    /**
+     * 사용자가 선택한 할 일의 정보 수정하는 메소드
+     *
+     * <p>현재 날짜의 목록 번호로 할 일 선택 후 내용, 날짜 및 시간, 태그 중 하나 수정 가능</p>
+     *
+     * <p>수정해도 할 일의 고유 id는 계속 유지</p>
+     */
     public void updateTodo() {
         Todo selectedTodo = selectTodo("수정할 ");
 
@@ -260,6 +330,16 @@ public class TodoManager {
                 + " | " + (selectedTodo.isDone() ? "완료" : "미완료"));
     }
 
+    /**
+     * 현재 선택된 날짜의 목록 번호로 선택하는 메소드
+     *
+     * <p> 입력한 번호가 유효하지 않으면 다시 입력 받고, 0 입력하면 선택 취소</p>
+     *
+     * <p>할 일 선택에 필요한 공통 처리 담당 (세 가지 메소드에서 이용)</p>
+     *
+     * @param message 번호 입력시 표시될 안내 문구
+     * @return 선택된 Todo 객체, 취소하거나 할 일 없으면 null
+     */
     private Todo selectTodo(String message) {
         List<Todo> result = getTodo(currentDate);
 
