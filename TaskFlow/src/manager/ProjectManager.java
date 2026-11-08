@@ -20,6 +20,13 @@ public class ProjectManager {
     }
     //프로젝트 등록
     public void addProject(Project project) {
+        if (project == null || project.getName() == null
+                || project.getName().trim().isEmpty()) {
+            System.out.println("올바른 프로젝트 이름을 입력해주세요.");
+            return;
+        }
+        String name = project.getName().trim();
+        project.setName(name);
         if (findProject(project.getName())!=null) {
             System.out.println("이미 존재하는 프로젝트입니다.");
             return;
@@ -31,8 +38,13 @@ public class ProjectManager {
     public List<Project> getAllProjects() {
         return projectList;
     }
+
     // projectList에서 이름이 같은 프로젝트 찾기
     public Project findProject(String name) {
+        if (name == null) {
+            return null;
+        }
+        name = name.trim();
         for(Project project:projectList){
             if(project!=null&& project.getName().equals(name)){
                 return project;
@@ -42,12 +54,77 @@ public class ProjectManager {
     }
     //프로젝트 삭제
     public void deleteProject(String name) {
+        if (name == null) {
+            System.out.println("프로젝트 이름을 입력해주세요.");
+            return;
+        }
+        name = name.trim();
         Project project = findProject(name);
         if (project == null) {
             System.out.println("존재하지 않는 프로젝트입니다.");
             return;
         }
-        if(projectList.remove(project))
+        List<Todo> todos = todoManager.getTodoByTag(name);
+        for(Todo todo:todos){
+            List<String> tags = new ArrayList<>(todo.getProjectTags());
+            tags.remove(name);
+            todo.setProjectTags(tags);
+        }
+        if(projectList.remove(project)){
             System.out.println("프로젝트가 삭제되었습니다.");
+        }
     }
+    //프로젝트 날짜 수정
+    public void updateDeadline(String name, LocalDateTime newDeadline) {
+        if (newDeadline == null) {
+            System.out.println("올바른 마감일을 입력해주세요.");
+            return;
+        }
+        Project project = findProject(name);
+        if(project==null){
+            System.out.println("프로젝트 이름을 다시 확인해주세요.");
+            return;
+        }
+        project.setDeadLine(newDeadline);
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
+        System.out.println("'" + project.getName() + "'의 마감일이 "
+                + newDeadline.format(formatter) + "으로 변경되었습니다.");
+    }
+    //프로젝트 이름 수정
+    public void updateProjectName(String oldName, String newName) {
+        if (oldName == null||newName == null) {
+            System.out.println("프로젝트 이름을 입력해주세요.");
+            return;
+        }
+        oldName = oldName.trim();
+        newName = newName.trim();
+        if (newName.isEmpty()) {
+            System.out.println("새로운 프로젝트 이름을 입력해주세요.");
+            return;
+        }
+        Project project = findProject(oldName);
+        if (project==null) {
+            System.out.println("프로젝트가 존재하지 않습니다.");
+            return;
+        }
+        if (oldName.equals(newName)) {
+            System.out.println("기존 프로젝트 이름과 동일합니다.");
+            return;
+        }
+        if (findProject(newName)!=null) {
+            System.out.println("이미 사용 중인 프로젝트 이름입니다.");
+            return;
+        }
+        List<Todo> todos = todoManager.getTodoByTag(oldName);
+        for (Todo todo : todos) {
+            List<String> tags = new ArrayList<>(todo.getProjectTags());
+            int index = tags.indexOf(oldName);
+            if (index >= 0) {
+                tags.set(index,newName);
+                todo.setProjectTags(tags);
+            }
+        }
+        project.setName(newName);
+    }
+
 }
