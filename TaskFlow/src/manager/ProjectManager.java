@@ -1,6 +1,8 @@
 package manager;
 
 import model.Project;
+import model.Todo;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Scanner;
@@ -10,7 +12,7 @@ import java.time.format.DateTimeFormatter;
 public class ProjectManager {
     Scanner scanner;
     TodoManager todoManager;
-    List<Project> projectList = new ArrayList<>(); //todo 보관 List
+    List<Project> projectList = new ArrayList<>(); //project 보관 List
 
     public ProjectManager(Scanner scanner, TodoManager todoManager) {
         this.scanner = scanner; //scanner 작업은 이걸로 통일
@@ -29,7 +31,7 @@ public class ProjectManager {
     public List<Project> getAllProjects() {
         return projectList;
     }
-    // projectList에서 이름이 같은 프로젝트 반환
+    // projectList에서 이름이 같은 프로젝트 찾기
     public Project findProject(String name) {
         for(Project project:projectList){
             if(project!=null&& project.getName().equals(name)){
@@ -38,5 +40,14 @@ public class ProjectManager {
         }
         return null;
     }
-
+    //프로젝트 삭제
+    public void deleteProject(String name) {
+        Project project = findProject(name);
+        if (project == null) {
+            System.out.println("존재하지 않는 프로젝트입니다.");
+            return;
+        }
+        if(projectList.remove(project))
+            System.out.println("프로젝트가 삭제되었습니다.");
+    }
 }
