@@ -64,7 +64,7 @@ public class ProjectManager {
             System.out.println("존재하지 않는 프로젝트입니다.");
             return;
         }
-        List<Todo> todos = todoManager.getTodoByTag(name);
+        List<Todo> todos = todoManager.getAllTodoByTag(name);
         for(Todo todo:todos){
             List<String> tags = new ArrayList<>(todo.getProjectTags());
             tags.remove(name);
@@ -115,7 +115,7 @@ public class ProjectManager {
             System.out.println("이미 사용 중인 프로젝트 이름입니다.");
             return;
         }
-        List<Todo> todos = todoManager.getTodoByTag(oldName);
+        List<Todo> todos = todoManager.getAllTodoByTag(oldName);
         for (Todo todo : todos) {
             List<String> tags = new ArrayList<>(todo.getProjectTags());
             int index = tags.indexOf(oldName);
