@@ -4,6 +4,7 @@ import model.Project;
 import model.Todo;
 
 import java.util.ArrayList;
+import java.util.InputMismatchException;
 import java.util.List;
 import java.util.Scanner;
 import java.time.LocalDateTime;
@@ -18,6 +19,32 @@ public class ProjectManager {
         this.scanner = scanner; //scanner 작업은 이걸로 통일
         this.todoManager = todoManager; //todoManager와 ProjectManager 연결
     }
+
+    public void showMenu() {
+        int choice;
+        while(true){
+            try{
+                System.out.println("-".repeat(10)+"MENU"+"-".repeat(10));
+                System.out.println("[1. 할 일 추가]\n[2. 프로젝트 관리]\n[0. 종료]");
+                System.out.println("-".repeat(10)+"MENU"+"-".repeat(10));
+                System.out.print("선택 : ");
+                choice = scanner.nextInt();
+                switch (choice){
+                    case 1 -> System.out.println("[1. 할 일(To-Do) 관리]\n");
+                    case 2 -> System.out.println("[2. 프로젝트 관리]\n");
+                    case 0 -> {
+                        System.out.println("TaskFlow를 종료합니다.");
+                        return;
+                    }
+                    default -> System.out.println("다시 입력해주세요.\n");
+                }
+            }catch(InputMismatchException e){
+                System.out.println("다시 입력해주세요.\n");
+                scanner.nextLine();
+            }
+        }
+    }
+
     //프로젝트 등록
     public void addProject(Project project) {
         if (project == null || project.getName() == null
