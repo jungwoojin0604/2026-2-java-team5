@@ -218,6 +218,18 @@ public class TodoManager {
         return result;
     }
 
+    public List<Todo> getAllTodoByTag(String tag) {
+        List<Todo> result = new ArrayList<>();
+
+        for (Todo todo : todoList) {
+            if (todo.getProjectTags().contains(tag.trim())) {
+                result.add(todo);
+            }
+        }
+
+        return result;
+    }
+
     /**
      * 사용자가 선택한 할 일의 완료 상태 변경하는 메소드
      *

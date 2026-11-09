@@ -10,4 +10,20 @@ public class Project {
         this.name = name;
         this.deadLine = deadLine;
     }
+
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    public LocalDateTime getDeadLine() {
+        return deadLine;
+    }
+
+    public void setDeadLine(LocalDateTime deadLine) {
+        this.deadLine = deadLine;
+    }
 }
