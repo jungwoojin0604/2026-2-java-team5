@@ -118,7 +118,7 @@ public class ProjectManager {
         deleteProject(name);
     }
 
-    // 프로젝트 등록
+
     public void addProject(Project project) {
         if (project == null || project.getName() == null
                 || project.getName().trim().isEmpty()) {

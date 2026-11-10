@@ -11,7 +11,6 @@ public class TestMain {
 //        TaskFlow taskFlow = new TaskFlow("우진");
 
         Scanner scanner = new Scanner(System.in);
-        TodoManager todoManager = new TodoManager(scanner);
-
+        TaskFlow taskFlow = new TaskFlow(scanner.nextLine());
     }
 }
