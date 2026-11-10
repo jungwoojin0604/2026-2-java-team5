@@ -3,10 +3,7 @@ package manager;
 import model.Project;
 import model.Todo;
 
-import java.util.ArrayList;
-import java.util.InputMismatchException;
-import java.util.List;
-import java.util.Scanner;
+import java.util.*;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 
@@ -25,13 +22,15 @@ public class ProjectManager {
         while(true){
             try{
                 System.out.println("-".repeat(10)+"MENU"+"-".repeat(10));
-                System.out.println("[1. 할 일 추가]\n[2. 프로젝트 관리]\n[0. 종료]");
+                System.out.println("[1. 할 일 추가]\n[2. 프로젝트 관리]\n[3. 프로젝트별 할 일 조회]\n[0. 종료]");
                 System.out.println("-".repeat(10)+"MENU"+"-".repeat(10));
                 System.out.print("선택 : ");
                 choice = scanner.nextInt();
+                scanner.nextLine();// 남은 개행문자 제거용
                 switch (choice){
                     case 1 -> System.out.println("[1. 할 일(To-Do) 관리]\n");
                     case 2 -> System.out.println("[2. 프로젝트 관리]\n");
+                    case 3 -> selectProjectAndShowTodos();
                     case 0 -> {
                         System.out.println("TaskFlow를 종료합니다.");
                         return;
@@ -152,6 +151,74 @@ public class ProjectManager {
             }
         }
         project.setName(newName);
+    }
+
+    public List<Todo> getProjectTodos(String projectName){
+        Project project = findProject(projectName);
+
+        if(project == null){
+            return new ArrayList<>();
+        }
+
+        List<Todo> todos = todoManager.getAllTodoByTag(project.getName());
+        todos.sort(Comparator.comparing(Todo::getDate));
+        return todos;
+
+    }
+
+    public void showProjectTodos(String projectName){
+
+        Project project = findProject(projectName);
+        if(project == null){
+            System.out.println("존재하지 않는 프로젝트입니다.");
+            return;
+        }
+
+        List<Todo> todos = getProjectTodos(project.getName());
+        System.out.println("----- "+project.getName()+"의 전체 할 일 -----");
+        if(todos.isEmpty()){
+            System.out.println("이 프로젝트에 할 일이 없습니다.");
+            return;
+        }
+
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
+        for(int i=0; i<todos.size(); i++){
+            Todo todo = todos.get(i);
+            System.out.println((i+1) + ". " + todo.getContent() + " | " + todo.getDate().format(formatter)
+                    + " | " + (todo.isDone() ? "완료" : "미완료"));
+        }
+    }
+
+    public void selectProjectAndShowTodos(){
+        if(projectList.isEmpty()){
+            System.out.println("등록된 프로젝트가 없습니다.");
+            return;
+        }
+
+        System.out.println("----- 프로젝트 목록 -----");
+        for(int i=0; i< projectList.size(); i++){
+            System.out.println((i+1) + ". " + projectList.get(i).getName());
+        }
+
+        System.out.println("조회할 프로젝트 번호 (취소: 0) : ");
+        String input = scanner.nextLine().trim();
+        int selected;
+        try{
+            selected = Integer.parseInt(input);
+        }catch (NumberFormatException e){
+            System.out.println("숫자를 입력해주세요.");
+            return;
+        }
+        if(selected == 0){
+            return;
+        }
+        if(selected < 1 || selected > projectList.size()){
+            System.out.println("존재하지 않는 프로젝트 번호입니다.");
+            return;
+        }
+
+        String name = projectList.get(selected - 1).getName();
+        showProjectTodos(name);
     }
 
 }
