@@ -49,15 +49,60 @@ public class TodoManager {
             try{
                 showTodo();
                 System.out.println("-".repeat(10)+"MENU"+"-".repeat(10));
-                System.out.println("[1. 할 일 추가]\n[2. 프로젝트 관리]\n[0. 종료]");
+                System.out.println("[1. 할 일 추가]");
+                System.out.println("[2. 할 일 삭제]");
+                System.out.println("[3. 할 일 수정]");
+                System.out.println("[4. 완료 상태 변경]");
+                System.out.println("[5. 날짜 이동]");
+                System.out.println("[6. 태그별 할 일 조회]");
+                System.out.println("[7. 완료 상태별 할 일 조회]");
+                System.out.println("[0. 이전 메뉴]");
                 System.out.println("-".repeat(10)+"MENU"+"-".repeat(10));
                 System.out.print("선택 : ");
                 choice = scanner.nextInt();
+                scanner.nextLine();
                 switch (choice){
-                    case 1 -> System.out.println("[1. 할 일(To-Do) 관리]\n");
-                    case 2 -> System.out.println("[2. 프로젝트 관리]\n");
+                    case 1 -> inputTodo();
+                    case 2 -> deleteTodo();
+                    case 3 -> updateTodo();
+                    case 4 -> changeStatus();
+                    case 5 -> moveDate();
+                    case 6 -> {
+                        System.out.print("조회할 태그를 입력하세요 : ");
+                        String tag = scanner.nextLine().trim();
+                        List<Todo> result = getTodoByTag(tag);
+
+                        if (result.isEmpty()) {
+                            System.out.println("해당 태그의 할 일이 없습니다");
+                        } else {
+                            System.out.println("-".repeat(10)+"태그별 할 일"+"-".repeat(10));
+                            for (Todo todo : result) {
+                                System.out.println(todo.getContent()+" | "+ todo.getDate().toLocalTime()+" | "+(todo.isDone() ? "완료" :"미완료"+" | "+todo.getProjectTags()));
+                            }
+                        }
+                    }
+                    case 7 -> {
+                        System.out.println("조회할 할 일 목록의 상태를 선택하세요");
+                        System.out.print("1) 완료 2) 미완료 : ");
+                        int status = scanner.nextInt();
+                        scanner.nextLine();
+
+                        if (status == 1 || status == 2) {
+                            boolean done = (status == 1);
+                            List<Todo> result = getTodoByStatus(done);
+
+                            if (result.isEmpty()) {
+                                System.out.println("해당 상태의 할 일이 없습니다");
+                            } else {
+                                System.out.println("-".repeat(10)+"상태별 할 일"+"-".repeat(10));
+                                for (Todo todo : result) {
+                                    System.out.println(todo.getContent()+" | "+ todo.getDate().toLocalTime()+" | "+(todo.isDone() ? "완료" :"미완료"+" | "+todo.getProjectTags()));
+                                }
+                            }
+                        }
+                    }
                     case 0 -> {
-                        System.out.println("TaskFlow를 종료합니다.");
+                        System.out.println("이전 메뉴로 돌아갑니다");
                         return;
                     }
                     default -> System.out.println("다시 입력해주세요.\n");

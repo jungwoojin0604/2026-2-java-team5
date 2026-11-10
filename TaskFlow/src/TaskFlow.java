@@ -30,7 +30,7 @@ public class TaskFlow {
                 System.out.print("선택 : ");
                 choice = scanner.nextInt();
                 switch (choice){
-                    case 1 -> todoManager.showTodo();
+                    case 1 -> todoManager.showMenu();
                     case 2 -> projectManager.showMenu();
                     case 0 -> {
                         System.out.println("TaskFlow를 종료합니다.");
