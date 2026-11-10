@@ -245,6 +245,13 @@ public class TodoManager {
         return result;
     }
 
+    /**
+     * 전체 날짜에서 지정한 태그 가진 할 일 조회하는 메소드
+     * getTodoByTag(), getTodoByStatus()는 현재 날짜 기준 할 일 필터링, getAllTodoByTag()는 전체 날짜 기준 (Project에서 사용)
+     *
+     * @param tag 검색할 태그
+     * @return 전체 날짜에서 해당 태그를 가진 할 일 목록
+     */
     public List<Todo> getAllTodoByTag(String tag) {
         List<Todo> result = new ArrayList<>();
 
