@@ -8,9 +8,7 @@ import java.util.Scanner;
 
 public class TestMain {
     static void main() {
-//        TaskFlow taskFlow = new TaskFlow("우진");
+        TaskFlow taskFlow = new TaskFlow("우진");
 
-        Scanner scanner = new Scanner(System.in);
-        TaskFlow taskFlow = new TaskFlow(scanner.nextLine());
     }
 }
