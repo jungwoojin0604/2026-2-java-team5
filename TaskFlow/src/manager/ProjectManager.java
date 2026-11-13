@@ -6,10 +6,7 @@ import model.Todo;
 import java.time.DateTimeException;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.List;
-import java.util.Scanner;
+import java.util.*;
 
 public class ProjectManager {
     Scanner scanner;
@@ -292,4 +289,16 @@ public class ProjectManager {
         String name = projectList.get(selected - 1).getName();
         showProjectTodos(name);
     }
+
+    @Override
+    public String toString() {
+        String[] str = new String[projectList.size()];
+        int i = 0;
+        for (Project project : projectList) {
+            str[i++] = "P|" + project.getName() + "|" + project.getDeadLine();
+        }
+        return String.join("\n", str);
+    }
 }
+
+

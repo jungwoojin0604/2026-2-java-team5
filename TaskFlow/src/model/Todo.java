@@ -34,7 +34,6 @@ public class Todo {
         this.isDone = false;
         this.projectTags = projectTags;
     }
-
     /**
      * 할 일의 고유 번호 반환
      * @return 할 일 고유 번호
