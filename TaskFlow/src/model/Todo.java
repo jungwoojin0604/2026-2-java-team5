@@ -1,6 +1,7 @@
 package model;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -22,6 +23,8 @@ public class Todo {
     /**
      * 새로운 할 일 생성
      *
+     * <p>프로젝트 태그 null이면 빈 리스트로 초기화, 태그 있을 때는 목록을 별도의 리스트로 복사해 저장</p>
+     *
      * @param id 할 일의 고유 번호 (동일한 이름의 할 일 구분용)
      * @param content 할 일 내용
      * @param date 할 일의 날짜 및 시간
@@ -32,8 +35,9 @@ public class Todo {
         this.content = content;
         this.date = date;
         this.isDone = false;
-        this.projectTags = projectTags;
+        this.projectTags = (projectTags == null) ? new ArrayList<>() : new ArrayList<>(projectTags);
     }
+
     /**
      * 할 일의 고유 번호 반환
      * @return 할 일 고유 번호
@@ -103,6 +107,6 @@ public class Todo {
      * @param projectTags 변경할 할 일 태그
      */
     public void setProjectTags(List<String> projectTags) {
-        this.projectTags = projectTags;
+        this.projectTags = (projectTags == null) ? new ArrayList<>() : new ArrayList<>(projectTags);
     }
 }

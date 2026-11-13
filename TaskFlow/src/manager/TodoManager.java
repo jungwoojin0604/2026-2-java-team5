@@ -78,7 +78,11 @@ public class TodoManager {
                         } else {
                             System.out.println("-".repeat(10)+"태그별 할 일"+"-".repeat(10));
                             for (Todo todo : result) {
-                                System.out.println(todo.getContent()+" | "+ todo.getDate().toLocalTime()+" | "+(todo.isDone() ? "완료" :"미완료"+" | "+todo.getProjectTags()));
+                                String output = todo.getContent()+" | "+todo.getDate().format(DateTimeFormatter.ofPattern("HH:mm"))+" | "+(todo.isDone() ? "완료" : "미완료");
+                                if (!todo.getProjectTags().isEmpty()) {
+                                    output += " | " + todo.getProjectTags();
+                                }
+                                System.out.println(output);
                             }
                         }
                     }
@@ -97,7 +101,11 @@ public class TodoManager {
                             } else {
                                 System.out.println("-".repeat(10)+"상태별 할 일"+"-".repeat(10));
                                 for (Todo todo : result) {
-                                    System.out.println(todo.getContent()+" | "+ todo.getDate().toLocalTime()+" | "+(todo.isDone() ? "완료" :"미완료"+" | "+todo.getProjectTags()));
+                                    String output = todo.getContent()+" | "+todo.getDate().format(DateTimeFormatter.ofPattern("HH:mm"))+" | "+(todo.isDone() ? "완료" : "미완료");
+                                    if (!todo.getProjectTags().isEmpty()) {
+                                        output += " | " + todo.getProjectTags();
+                                    }
+                                    System.out.println(output);
                                 }
                             }
                         }
@@ -202,6 +210,8 @@ public class TodoManager {
      * <p>할 일의 목록 번호, 내용, 시간, 완료 여부, 프로젝트 태그 출력</p>
      *
      * <p>목록 번호 1부터 시작 (할 일의 고유 id와는 별개)</p>
+     *
+     * <p>프로젝트 태그 있는 경우 태그 함께 출력</p>
      */
     public void showTodo() {
         List<Todo> todobydate = getTodo(currentDate);
@@ -213,7 +223,11 @@ public class TodoManager {
 
         for (int i=0; i<todobydate.size(); i++) {
             Todo todo = todobydate.get(i);
-            System.out.println((i+1)+"."+todo.getContent()+" | "+todo.getDate().toLocalTime()+" | "+(todo.isDone() ? "완료" : "미완료")+" | "+todo.getProjectTags());
+            String result = (i + 1) + "." + todo.getContent() + " | " + todo.getDate().format(DateTimeFormatter.ofPattern("HH:mm")) + " | " + (todo.isDone() ? "완료" : "미완료");
+            if (!todo.getProjectTags().isEmpty()) {
+                result += " | " + todo.getProjectTags();
+            }
+            System.out.println(result);
         }
     }
 
