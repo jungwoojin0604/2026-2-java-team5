@@ -1,5 +1,6 @@
 package manager;
 
+import model.Project;
 import model.Todo;
 
 import java.time.DateTimeException;
@@ -462,5 +463,15 @@ public class TodoManager {
 
             return result.get(number-1);
         }
+    }
+
+    @Override
+    public String toString() {
+        String[] str = new String[todoList.size()];
+        int i = 0;
+        for (Todo todo : todoList) {
+            str[i++] = "T|" + todo.getContent() + "|" + todo.getDate() + "|" + todo.getProjectTags();
+        }
+        return String.join("\n", str);
     }
 }
