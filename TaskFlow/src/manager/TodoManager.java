@@ -34,7 +34,8 @@ public class TodoManager {
      * <p>
      * - 할 일 목록 초기화
      * - 다음 할 일 id 1로 설정
-     * - 조회 기준 날짜를 현재 날짜로 설정</p>
+     * - 조회 기준 날짜를 현재 날짜로 설정
+     * - 빈번한 index 기반 접근으로 인해 ArrayList 사용 유지 </p>
      *
      * @param scanner 사용자 입력에 사용할 Scanner 객체
      */
