@@ -5,20 +5,26 @@ import model.Todo;
 
 import java.time.DateTimeException;
 import java.time.LocalDateTime;
+import java.time.LocalDate;
+import java.time.temporal.ChronoUnit;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
 
 public class ProjectManager {
+    //1.필드 및 생성자
     private final Scanner scanner;
     private final TodoManager todoManager;
     // 중복 방지와 등록 순서 유지를 위해 LinkedHashSet 사용
     private final Set<Project> projectList = new LinkedHashSet<>();
+    // 프로젝트 날짜 입력 및 출력에 공통으로 사용하는 형식
+    private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
 
     public ProjectManager(Scanner scanner, TodoManager todoManager) {
         this.scanner = scanner; // scanner 작업은 이걸로 통일
         this.todoManager = todoManager; // todoManager와 ProjectManager 연결
     }
 
+    //2.메인 메뉴
     public void showMenu() {
         while (true) {
             // 현재 등록된 프로젝트 목록 출력
@@ -26,18 +32,9 @@ public class ProjectManager {
             if (projectList.isEmpty()) {
                 System.out.println("등록된 프로젝트가 없습니다.");
             } else {
-                // Set은 인덱스가 없으므로 for-each로 프로젝트를 순서대로 출력
-                DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
-                int i = 1;
-
-                for (Project project : projectList) {
-                    String deadline = project.getDeadLine() == null
-                            ? "미설정" : project.getDeadLine().format(formatter);
-
-                    System.out.println(i + ". " + project.getName()
-                            + " | 마감일: " + deadline);
-                    i++;
-                }
+                // LinkedHashSet에 저장된 프로젝트를 등록 순서대로 출력
+                // 프로젝트 이름 옆에 마감일까지 남은 일수를 표시
+                printProjectList();
             }
 
             // 프로젝트 관리 메뉴 출력
@@ -64,7 +61,7 @@ public class ProjectManager {
         }
     }
 
-    // 1. 프로젝트 등록 메뉴
+    //3. 메뉴 1번 : 프로젝트 추가
     public void inputProject() {
         System.out.print("프로젝트 이름을 입력하세요: ");
         String name = scanner.nextLine().trim();
@@ -75,53 +72,15 @@ public class ProjectManager {
 
         System.out.print("프로젝트 마감일을 입력하세요 (yyyy-MM-dd HH:mm): ");
         String inputDate = scanner.nextLine().trim();
-        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
         try {
-            LocalDateTime deadline = LocalDateTime.parse(inputDate, formatter);
+            //String inputDate -> LocalDateTime deadline 형식: DATE_FORMATTER
+            LocalDateTime deadline = LocalDateTime.parse(inputDate, DATE_FORMATTER);
             Project project = new Project(name, deadline);
             addProject(project);
         } catch (DateTimeException e) {
             System.out.println("날짜 형식이 잘못되었습니다.");
         }
     }
-
-    // 2. 프로젝트 이름 수정 메뉴
-    public void inputUpdateProjectName() {
-        System.out.print("수정할 프로젝트 이름: ");
-        String oldName = scanner.nextLine().trim();
-        System.out.print("새로운 프로젝트 이름: ");
-        String newName = scanner.nextLine().trim();
-        updateProjectName(oldName, newName);
-    }
-
-    // 3. 프로젝트 마감일 수정 메뉴
-    public void inputUpdateDeadline() {
-        System.out.print("마감일을 수정할 프로젝트 이름: ");
-        String name = scanner.nextLine().trim();
-        if (findProject(name) == null) {
-            System.out.println("존재하지 않는 프로젝트입니다.");
-            return;
-        }
-
-        System.out.print("새로운 마감일 (yyyy-MM-dd HH:mm): ");
-        String inputDate = scanner.nextLine().trim();
-        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
-        try {
-            LocalDateTime newDeadline = LocalDateTime.parse(inputDate, formatter);
-            updateDeadline(name, newDeadline);
-        } catch (DateTimeException e) {
-            System.out.println("날짜 형식이 잘못되었습니다.");
-        }
-    }
-
-    // 4. 프로젝트 삭제 메뉴
-    public void inputDeleteProject() {
-        System.out.print("삭제할 프로젝트 이름: ");
-        String name = scanner.nextLine().trim();
-        deleteProject(name);
-    }
-
-
     /**
      * 프로젝트를 Set에 등록한다.
      * 프로젝트 이름이 같으면 중복으로 판단하여 등록하지 않는다.
@@ -132,7 +91,6 @@ public class ProjectManager {
             System.out.println("올바른 프로젝트 이름을 입력해주세요.");
             return;
         }
-
         String name = project.getName().trim();
         project.setName(name);
 
@@ -144,68 +102,14 @@ public class ProjectManager {
         }
     }
 
-    /**
-     * 프로젝트 목록을 Set 형태로 반환한다.
-     * 외부에서 Set에 직접 추가하거나 삭제하지 못하도록 보호한다.
-     */
-    public Set<Project> getAllProjects() {
-        return Collections.unmodifiableSet(projectList);
+    //4. 메뉴 2번 : 프로젝트 이름 수정
+    public void inputUpdateProjectName() {
+        System.out.print("수정할 프로젝트 이름: ");
+        String oldName = scanner.nextLine().trim();
+        System.out.print("새로운 프로젝트 이름: ");
+        String newName = scanner.nextLine().trim();
+        updateProjectName(oldName, newName);
     }
-
-    // projectList에서 이름이 같은 프로젝트 찾기
-    public Project findProject(String name) {
-        if (name == null) {
-            return null;
-        }
-        name = name.trim();
-        for (Project project : projectList) {
-            if (project != null && project.getName().equals(name)) {
-                return project;
-            }
-        }
-        return null;
-    }
-
-    // 프로젝트 삭제
-    public void deleteProject(String name) {
-        if (name == null) {
-            System.out.println("프로젝트 이름을 입력해주세요.");
-            return;
-        }
-        name = name.trim();
-        Project project = findProject(name);
-        if (project == null) {
-            System.out.println("존재하지 않는 프로젝트입니다.");
-            return;
-        }
-        List<Todo> todos = todoManager.getAllTodoByTag(name);
-        for (Todo todo : todos) {
-            List<String> tags = new ArrayList<>(todo.getProjectTags());
-            tags.remove(name);
-            todo.setProjectTags(tags);
-        }
-        if (projectList.remove(project)) {
-            System.out.println("프로젝트가 삭제되었습니다.");
-        }
-    }
-
-    // 프로젝트 날짜 수정
-    public void updateDeadline(String name, LocalDateTime newDeadline) {
-        if (newDeadline == null) {
-            System.out.println("올바른 마감일을 입력해주세요.");
-            return;
-        }
-        Project project = findProject(name);
-        if (project == null) {
-            System.out.println("프로젝트 이름을 다시 확인해주세요.");
-            return;
-        }
-        project.setDeadLine(newDeadline);
-        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
-        System.out.println("'" + project.getName() + "'의 마감일이 "
-                + newDeadline.format(formatter) + "으로 변경되었습니다.");
-    }
-
     // 프로젝트 이름 수정
     public void updateProjectName(String oldName, String newName) {
         if (oldName == null || newName == null) {
@@ -245,39 +149,69 @@ public class ProjectManager {
         projectList.add(project);     // 3. 변경된 이름으로 다시 등록
         System.out.println("프로젝트 이름이 변경되었습니다.");
     }
-
-    //프로젝트별 전체 할 일 조회
-    public List<Todo> getProjectTodos(String projectName) {
-        Project project = findProject(projectName);
-        if (project == null) {
-            return new ArrayList<>();
+    // 5. 메뉴 3번 : 프로젝트 마감일 수정
+    public void inputUpdateDeadline() {
+        System.out.print("마감일을 수정할 프로젝트 이름: ");
+        String name = scanner.nextLine().trim();
+        if (findProject(name) == null) {
+            System.out.println("존재하지 않는 프로젝트입니다.");
+            return;
         }
-        List<Todo> todos = todoManager.getAllTodoByTag(project.getName());
-        todos.sort(Comparator.comparing(Todo::getDate));
-        return todos;
-    }
 
-    public void showProjectTodos(String projectName) {
-        Project project = findProject(projectName);
+        System.out.print("새로운 마감일 (yyyy-MM-dd HH:mm): ");
+        String inputDate = scanner.nextLine().trim();
+        try {
+            LocalDateTime newDeadline = LocalDateTime.parse(inputDate, DATE_FORMATTER);
+            updateDeadline(name, newDeadline);
+        } catch (DateTimeException e) {
+            System.out.println("날짜 형식이 잘못되었습니다.");
+        }
+    }
+    // 프로젝트 날짜 수정
+    public void updateDeadline(String name, LocalDateTime newDeadline) {
+        if (newDeadline == null) {
+            System.out.println("올바른 마감일을 입력해주세요.");
+            return;
+        }
+        Project project = findProject(name);
+        if (project == null) {
+            System.out.println("프로젝트 이름을 다시 확인해주세요.");
+            return;
+        }
+        project.setDeadLine(newDeadline);
+        System.out.println("'" + project.getName() + "'의 마감일이 "
+                + newDeadline.format(DATE_FORMATTER) + "으로 변경되었습니다.");
+    }
+    //6. 메뉴 4번 : 프로젝트 삭제
+    public void inputDeleteProject() {
+        System.out.print("삭제할 프로젝트 이름: ");
+        String name = scanner.nextLine().trim();
+        deleteProject(name);
+    }
+    // 프로젝트 삭제
+    public void deleteProject(String name) {
+        if (name == null) {
+            System.out.println("프로젝트 이름을 입력해주세요.");
+            return;
+        }
+        name = name.trim();
+        Project project = findProject(name);
         if (project == null) {
             System.out.println("존재하지 않는 프로젝트입니다.");
             return;
         }
-        List<Todo> todos = getProjectTodos(project.getName());
-        System.out.println("----- " + project.getName() + "의 전체 할 일 -----");
-        if (todos.isEmpty()) {
-            System.out.println("이 프로젝트에 할 일이 없습니다.");
-            return;
+        List<Todo> todos = todoManager.getAllTodoByTag(name);
+        for (Todo todo : todos) {
+            List<String> tags = new ArrayList<>(todo.getProjectTags());
+            tags.remove(name);
+            todo.setProjectTags(tags);
         }
-        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
-        for (int i = 0; i < todos.size(); i++) {
-            Todo todo = todos.get(i);
-            System.out.println((i + 1) + ". " + todo.getContent() + " | "
-                    + todo.getDate().format(formatter) + " | "
-                    + (todo.isDone() ? "완료" : "미완료"));
+        if (projectList.remove(project)) {
+            System.out.println("프로젝트가 삭제되었습니다.");
         }
     }
 
+    //7. 메뉴 5번 : 프로젝트별 할 일 조회
     /**
      * 등록된 프로젝트에 번호를 붙여 출력하고,
      * 사용자가 선택한 프로젝트의 할 일 목록을 조회한다.
@@ -291,11 +225,8 @@ public class ProjectManager {
         // 1. Set에 저장된 프로젝트를 순서대로 출력
         System.out.println("----- 프로젝트 목록 -----");
 
-        int i = 1;
-        for (Project project : projectList) {
-            System.out.println(i + ". " + project.getName());
-            i++;
-        }
+        // 번호 선택 화면에서도 프로젝트별 D-day 표시
+        printProjectList();
 
         // 2. 사용자에게 프로젝트 번호 입력받기
         System.out.print("조회할 프로젝트 번호 (취소: 0) : ");
@@ -319,7 +250,7 @@ public class ProjectManager {
         }
 
         // 3. 선택한 번호에 해당하는 프로젝트 찾기
-        i = 1;
+        int i = 1;
         for (Project project : projectList) {
             if (i == selected) {
                 showProjectTodos(project.getName());
@@ -329,6 +260,115 @@ public class ProjectManager {
         }
     }
 
+    //프로젝트의 모든 할 일 출력
+    public void showProjectTodos(String projectName) {
+        Project project = findProject(projectName);
+        if (project == null) {
+            System.out.println("존재하지 않는 프로젝트입니다.");
+            return;
+        }
+        List<Todo> todos = getProjectTodos(project.getName());
+        System.out.println("----- " + project.getName() + "의 전체 할 일 -----");
+        if (todos.isEmpty()) {
+            System.out.println("이 프로젝트에 할 일이 없습니다.");
+            return;
+        }
+        // 날짜가 없으면 Anytime으로 표시하고, 시간이 있는 경우에만 추가
+        for (int i = 0; i < todos.size(); i++) {
+            Todo todo = todos.get(i);
+
+            String date = todo.getDate() == null
+                    ? "Anytime" : todo.getDate().toString();
+
+            if (todo.getTime() != null) {
+                date += " " + todo.getTime();
+            }
+
+            System.out.println((i + 1) + ". " + todo.getContent()
+                    + " | " + date
+                    + " | " + (todo.isDone() ? "완료" : "미완료"));
+        }
+    }
+
+    /**
+     * 특정 프로젝트에 연결된 모든 할 일을 반환한다.
+     * 날짜가 없는 Anytime 할 일은 목록의 마지막에 정렬한다.
+     */
+    public List<Todo> getProjectTodos(String projectName) {
+        Project project = findProject(projectName);
+
+        if (project == null) {
+            return new ArrayList<>();
+        }
+
+        List<Todo> todos = todoManager.getAllTodoByTag(project.getName());
+        //sort(비교방법) comparaing(비교기준, 비교방법)
+        todos.sort(Comparator.comparing(
+                Todo::getDate, //Todo객체를 받을 때 todo.getDate로 반환
+                //naturalOrder: 날짜를 오름차순으로 비교
+                //nullsLast: 날짜가 null이면 맨 뒤로
+                Comparator.nullsLast(Comparator.naturalOrder())
+        ));
+        return todos;
+    }
+
+    //8. 공통 보조 메소드
+    // projectList에서 이름이 같은 프로젝트 반환
+    public Project findProject(String name) {
+        if (name == null) {
+            return null;
+        }
+        name = name.trim();
+        for (Project project : projectList) {
+            if (project != null && project.getName().equals(name)) {
+                return project;
+            }
+        }
+        return null;
+    }
+    /**
+     * 프로젝트 목록을 Set 형태로 반환한다.
+     * 외부에서 Set에 직접 추가하거나 삭제하지 못하도록 보호한다.
+     */
+    public Set<Project> getAllProjects() {
+        return Collections.unmodifiableSet(projectList);
+    }
+    /**
+     * 프로젝트 목록을 등록 순서대로 출력한다.
+     * 각 프로젝트의 번호, 이름, D-day를 함께 표시한다.
+     */
+    private void printProjectList() {
+        int i = 1;
+
+        for (Project project : projectList) {
+            System.out.println(i + ". " + project.getName()
+                    + " | " + getDDay(project));
+            i++;
+        }
+    }
+    /**
+     * 프로젝트 마감일까지 남은 날짜를 계산한다.
+     * 마감 전은 D-N일, 당일은 D-Day, 지난 날짜는 D+N일로 반환한다.
+     */
+    private String getDDay(Project project) {
+        if (project.getDeadLine() == null) {
+            return "미설정";
+        }
+        LocalDate today = LocalDate.now();
+        LocalDate deadline = project.getDeadLine().toLocalDate(); //날짜까지만 저장
+
+        long days = ChronoUnit.DAYS.between(today, deadline); //deadline-today
+
+        if (days > 0) {
+            return "D-" + days + "일";
+        } else if (days == 0) {
+            return "D-Day";
+        } else {
+            return "D+" + (-days) + "일";
+        }
+    }
+
+    //9. 파일 저장용
     @Override
     public String toString() {
         String[] str = new String[projectList.size()];
