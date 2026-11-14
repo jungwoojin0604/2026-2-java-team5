@@ -1,5 +1,6 @@
 package manager;
 
+import model.Project;
 import model.Todo;
 
 import java.time.DateTimeException;
@@ -27,6 +28,7 @@ import java.util.Scanner;
 public class TodoManager {
     private final Scanner scanner;
     private final List<Todo> todoList; //todo 보관 list
+    private ProjectManager projectManager;
     private int nextId;
     private LocalDate currentDate;
 
@@ -46,6 +48,15 @@ public class TodoManager {
         this.todoList = new ArrayList<>();
         this.nextId = 1;
         this.currentDate = LocalDate.now();
+    }
+
+    /**
+     * 프로젝트 목록 조회를 위해 ProjectManager 연결
+     *
+     * @param projectManager 연결할 ProjectManager 객체
+     */
+    public void setProjectManager(ProjectManager projectManager) {
+        this.projectManager = projectManager;
     }
 
     /**
@@ -215,11 +226,20 @@ public class TodoManager {
                 System.out.println("시간 형식이 잘못되었습니다.");
             }
         }
+
+        System.out.println("----- 기존 프로젝트 목록 -----");
+
+        if (projectManager == null || projectManager.getAllProjects().isEmpty()) {
+            System.out.println("등록된 프로젝트가 없습니다.");
+        } else {
+            for (Project project : projectManager.getAllProjects()) {
+                System.out.println("- " + project.getName());
+            }
+        }
+        System.out.println("태그 여러 개 입력시 컴마로 구분하여 입력해주세요");
         System.out.print("태그를 입력하세요: ");
         String inputTag = scanner.nextLine();
-
         List<String> projectTags = new ArrayList<>();
-
         for (String tag : inputTag.split(",")) {
             if (!tag.trim().isEmpty()) {
                 projectTags.add(tag.trim());
