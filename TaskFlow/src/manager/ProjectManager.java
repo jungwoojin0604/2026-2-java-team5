@@ -5,6 +5,8 @@ import model.Todo;
 
 import java.time.DateTimeException;
 import java.time.LocalDateTime;
+import java.time.LocalDate;
+import java.time.temporal.ChronoUnit;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
 
@@ -19,6 +21,28 @@ public class ProjectManager {
         this.todoManager = todoManager; // todoManager와 ProjectManager 연결
     }
 
+    /**
+     * 프로젝트 마감일까지 남은 날짜를 계산한다.
+     * 마감 전은 D-N일, 당일은 D-Day, 지난 날짜는 D+N일로 반환한다.
+     */
+    private String getDDay(Project project) {
+        if (project.getDeadLine() == null) {
+            return "미설정";
+        }
+        LocalDate today = LocalDate.now();
+        LocalDate deadline = project.getDeadLine().toLocalDate();
+
+        long days = ChronoUnit.DAYS.between(today, deadline);
+
+        if (days > 0) {
+            return "D-" + days + "일";
+        } else if (days == 0) {
+            return "D-Day";
+        } else {
+            return "D+" + (-days) + "일";
+        }
+    }
+
     public void showMenu() {
         while (true) {
             // 현재 등록된 프로젝트 목록 출력
@@ -26,16 +50,12 @@ public class ProjectManager {
             if (projectList.isEmpty()) {
                 System.out.println("등록된 프로젝트가 없습니다.");
             } else {
-                // Set은 인덱스가 없으므로 for-each로 프로젝트를 순서대로 출력
-                DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
+                // LinkedHashSet에 저장된 프로젝트를 등록 순서대로 출력
+                // 프로젝트 이름 옆에 마감일까지 남은 일수를 표시
                 int i = 1;
-
                 for (Project project : projectList) {
-                    String deadline = project.getDeadLine() == null
-                            ? "미설정" : project.getDeadLine().format(formatter);
-
                     System.out.println(i + ". " + project.getName()
-                            + " | 마감일: " + deadline);
+                            + " | " + getDDay(project));
                     i++;
                 }
             }
@@ -291,9 +311,12 @@ public class ProjectManager {
         // 1. Set에 저장된 프로젝트를 순서대로 출력
         System.out.println("----- 프로젝트 목록 -----");
 
+        // 번호 선택 화면에서도 프로젝트별 D-day 표시
         int i = 1;
+
         for (Project project : projectList) {
-            System.out.println(i + ". " + project.getName());
+            System.out.println(i + ". " + project.getName()
+                    + " | " + getDDay(project));
             i++;
         }
 
