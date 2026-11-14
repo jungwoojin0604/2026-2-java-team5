@@ -1,11 +1,10 @@
 package manager;
 
-import model.Project;
 import model.Todo;
 
 import java.time.DateTimeException;
 import java.time.LocalDate;
-import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.InputMismatchException;
@@ -78,7 +77,11 @@ public class TodoManager {
                         } else {
                             System.out.println("-".repeat(10)+"태그별 할 일"+"-".repeat(10));
                             for (Todo todo : result) {
-                                System.out.println(todo.getContent()+" | "+ todo.getDate().toLocalTime()+" | "+(todo.isDone() ? "완료" :"미완료"+" | "+todo.getProjectTags()));
+                                String output = todo.getContent() + formatTodoTime(todo) + " | " + (todo.isDone() ? "완료" : "미완료");
+                                if (!todo.getProjectTags().isEmpty()) {
+                                    output += " | " + todo.getProjectTags();
+                                }
+                                System.out.println(output);
                             }
                         }
                     }
@@ -91,13 +94,16 @@ public class TodoManager {
                         if (status == 1 || status == 2) {
                             boolean done = (status == 1);
                             List<Todo> result = getTodoByStatus(done);
-
                             if (result.isEmpty()) {
                                 System.out.println("해당 상태의 할 일이 없습니다");
                             } else {
                                 System.out.println("-".repeat(10)+"상태별 할 일"+"-".repeat(10));
                                 for (Todo todo : result) {
-                                    System.out.println(todo.getContent()+" | "+ todo.getDate().toLocalTime()+" | "+(todo.isDone() ? "완료" :"미완료"+" | "+todo.getProjectTags()));
+                                    String output = todo.getContent() + formatTodoTime(todo) + " | " + (todo.isDone() ? "완료" : "미완료");
+                                    if (!todo.getProjectTags().isEmpty()) {
+                                        output += " | " + todo.getProjectTags();
+                                    }
+                                    System.out.println(output);
                                 }
                             }
                         }
@@ -121,11 +127,12 @@ public class TodoManager {
      * <p>할 일에 nextId를 고유 id로 부여, 등록 후 nextId 1 증가</p>
      *
      * @param content 등록할 할 일 내용
-     * @param date 등록할 할 일의 날짜 및 시간
+     * @param date 등록할 할 일의 날짜
+     * @param time 등록할 할 일의 시간 (미지정시 null로 저장)
      * @param projectTags 등록할 할 일의 태그 목록
      */
-    public void addTodo(String content, LocalDateTime date, List<String> projectTags) {
-        Todo todo = new Todo(nextId, content, date, projectTags);
+    public void addTodo(String content, LocalDate date, LocalTime time, List<String> projectTags) {
+        Todo todo = new Todo(nextId, content, date, time, projectTags);
         todoList.add(todo);
         nextId++;
     }
@@ -150,21 +157,49 @@ public class TodoManager {
             System.out.println("할 일이 입력되지 않았습니다");
         }
 
-        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
-        LocalDateTime date;
+       LocalDate date;
 
         while (true) {
-            System.out.print("배정할 날짜를 형식과 같이 입력하세요 (yyyy-MM-dd HH:mm): ");
-            String allocatedDate = scanner.nextLine();
+            System.out.println("현재 날짜 (" + currentDate + ")에 바로 등록이 가능합니다");
+            System.out.print("1) 현재 날짜에 등록 2) 날짜 직접 입력 >> ");
 
-            try {
-                date = LocalDateTime.parse(allocatedDate, formatter);
+            String choice = scanner.nextLine().trim();
+
+            if (choice.equals("1")) {
+                date = currentDate;
                 break;
-            } catch (DateTimeException e) {
-                System.out.println("날짜 형식이 잘못되었습니다.");
+            } else if (choice.equals("2")) {
+                while (true) {
+                    System.out.print("등록할 날짜를 입력하세요 (yyyy-MM-dd): ");
+                    String inputDate = scanner.nextLine().trim();
+                    try {
+                        date = LocalDate.parse(inputDate);
+                        break;
+                    } catch (DateTimeException e) {
+                        System.out.println("날짜 형식이 잘못되었습니다.");
+                    }
+                }
+                break;
+            } else {
+                System.out.println("1 또는 2만 입력해주세요");
             }
         }
 
+        LocalTime time = null;
+
+        while (true) {
+            System.out.print("시간을 입력하세요 (HH:mm, 미입력 시 시간 미지정) >> ");
+            String inputTime = scanner.nextLine().trim();
+            if (inputTime.isEmpty()) {
+                break;
+            }
+            try {
+                time = LocalTime.parse(inputTime);
+                break;
+            } catch (DateTimeException e) {
+                System.out.println("시간 형식이 잘못되었습니다.");
+            }
+        }
         System.out.print("태그를 입력하세요: ");
         String inputTag = scanner.nextLine();
 
@@ -175,8 +210,7 @@ public class TodoManager {
                 projectTags.add(tag.trim());
             }
         }
-
-        addTodo(content, date, projectTags);
+        addTodo(content, date, time, projectTags);
     }
 
     /**
@@ -189,11 +223,24 @@ public class TodoManager {
         List<Todo> result = new ArrayList<>();
 
         for (Todo todo : todoList) {
-            if (todo.getDate().toLocalDate().equals(date)) {
+            if (todo.getDate().equals(date)) {
                 result.add(todo);
             }
         }
         return result;
+    }
+
+    /**
+     * 할 일의 시간 정해져 있으면 시간 문자열로 반환
+     *
+     * @param todo 시간 정보 확인할 할 일
+     * @return 시간이 있는 경우 " | HH:mm 형식, 없으면 빈 문자열
+     */
+    private String formatTodoTime(Todo todo) {
+        if (todo.getTime() == null) {
+            return "";
+        }
+        return " | "+todo.getTime().format(DateTimeFormatter.ofPattern("HH:mm"));
     }
 
     /**
@@ -202,18 +249,23 @@ public class TodoManager {
      * <p>할 일의 목록 번호, 내용, 시간, 완료 여부, 프로젝트 태그 출력</p>
      *
      * <p>목록 번호 1부터 시작 (할 일의 고유 id와는 별개)</p>
+     *
+     * <p>프로젝트 태그 있는 경우 태그 함께 출력</p>
      */
     public void showTodo() {
         List<Todo> todobydate = getTodo(currentDate);
-        System.out.println("----- "+currentDate+" 할 일 목록 -----");
+        System.out.println("----- " + currentDate + " 할 일 목록 -----");
         if (todobydate.isEmpty()) {
             System.out.println("할 일이 없습니다.");
             return;
         }
-
-        for (int i=0; i<todobydate.size(); i++) {
+        for (int i = 0; i < todobydate.size(); i++) {
             Todo todo = todobydate.get(i);
-            System.out.println((i+1)+"."+todo.getContent()+" | "+todo.getDate().toLocalTime()+" | "+(todo.isDone() ? "완료" : "미완료")+" | "+todo.getProjectTags());
+            String result = (i + 1) + "." + todo.getContent() + formatTodoTime(todo) + " | " + (todo.isDone() ? "완료" : "미완료");
+            if (!todo.getProjectTags().isEmpty()) {
+                result += " | " + todo.getProjectTags();
+            }
+            System.out.println(result);
         }
     }
 
@@ -328,7 +380,7 @@ public class TodoManager {
 
         System.out.println("할 일 상태 변경이 완료되었습니다");
         System.out.println("변경 내용");
-        System.out.println(selectedTodo.getContent()+" | "+selectedTodo.getDate()+" | "+(selectedTodo.isDone() ? "완료" : "미완료"));
+        System.out.println(selectedTodo.getContent()+" | "+selectedTodo.getDate()+formatTodoTime(selectedTodo)+" | "+(selectedTodo.isDone() ? "완료" : "미완료"));
     }
 
     /**
@@ -381,16 +433,33 @@ public class TodoManager {
                 break;
 
             case "2":
-                DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
-                System.out.print("수정할 날짜 및 시간을 아래 형식과 같이 입력하세요 (yyyy-MM-dd HH:mm) : ");
-                String inputDate = scanner.nextLine().trim();
-                try {
-                    LocalDateTime newDate = LocalDateTime.parse(inputDate, formatter);
-                    selectedTodo.setDate(newDate);
-                } catch (DateTimeException e) {
-                    System.out.println("날짜 형식이 잘못되었습니다");
-                    return;
+                LocalDate newDate;
+                while (true) {
+                    System.out.print("수정할 날짜를 입력하세요 (yyyy-MM-dd): ");
+                    String inputDate = scanner.nextLine().trim();
+                    try {
+                        newDate = LocalDate.parse(inputDate);
+                        break;
+                    } catch (DateTimeException e) {
+                        System.out.println("날짜 형식이 잘못되었습니다.");
+                    }
                 }
+                LocalTime newTime = null;
+                while (true) {
+                    System.out.print("수정할 시간을 입력하세요 (HH:mm, 미입력 상태로 엔터 누르면 시간 미지정): ");
+                    String inputTime = scanner.nextLine().trim();
+                    if (inputTime.isEmpty()) {
+                        break;
+                    }
+                    try {
+                        newTime = LocalTime.parse(inputTime);
+                        break;
+                    } catch (DateTimeException e) {
+                        System.out.println("시간 형식이 잘못되었습니다.");
+                    }
+                }
+                selectedTodo.setDate(newDate);
+                selectedTodo.setTime(newTime);
                 break;
 
             case "3":
@@ -416,10 +485,8 @@ public class TodoManager {
         }
         System.out.println("할 일 수정이 완료되었습니다");
         System.out.println("수정 내용");
-        System.out.println(selectedTodo.getContent()
-                + " | " + selectedTodo.getDate()
-                + " | " + selectedTodo.getProjectTags()
-                + " | " + (selectedTodo.isDone() ? "완료" : "미완료"));
+        System.out.println(selectedTodo.getContent()+" | "+selectedTodo.getDate()+formatTodoTime(selectedTodo)
+                +" | "+selectedTodo.getProjectTags()+" | "+(selectedTodo.isDone() ? "완료" : "미완료"));
     }
 
     /**
@@ -470,7 +537,7 @@ public class TodoManager {
         String[] str = new String[todoList.size()];
         int i = 0;
         for (Todo todo : todoList) {
-            str[i++] = "T|" + todo.getContent() + "|" + todo.getDate() + "|" + todo.getProjectTags();
+            str[i++] = "T|" + todo.getContent() + "|" + todo.getDate() + "|" + (todo.getTime()==null ? "" : todo.getTime())+ "|" + todo.getProjectTags();
         }
         return String.join("\n", str);
     }
