@@ -9,9 +9,10 @@ import java.time.format.DateTimeFormatter;
 import java.util.*;
 
 public class ProjectManager {
-    Scanner scanner;
-    TodoManager todoManager;
-    List<Project> projectList = new ArrayList<>(); // project 보관 List
+    private final Scanner scanner;
+    private final TodoManager todoManager;
+    // 중복 방지와 등록 순서 유지를 위해 LinkedHashSet 사용
+    private final Set<Project> projectList = new LinkedHashSet<>();
 
     public ProjectManager(Scanner scanner, TodoManager todoManager) {
         this.scanner = scanner; // scanner 작업은 이걸로 통일
@@ -25,12 +26,17 @@ public class ProjectManager {
             if (projectList.isEmpty()) {
                 System.out.println("등록된 프로젝트가 없습니다.");
             } else {
+                // Set은 인덱스가 없으므로 for-each로 프로젝트를 순서대로 출력
                 DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
-                for (int i = 0; i < projectList.size(); i++) {
-                    Project project = projectList.get(i);
+                int i = 1;
+
+                for (Project project : projectList) {
                     String deadline = project.getDeadLine() == null
                             ? "미설정" : project.getDeadLine().format(formatter);
-                    System.out.println((i + 1) + ". " + project.getName() + " | 마감일: " + deadline);
+
+                    System.out.println(i + ". " + project.getName()
+                            + " | 마감일: " + deadline);
+                    i++;
                 }
             }
 
@@ -116,25 +122,34 @@ public class ProjectManager {
     }
 
 
+    /**
+     * 프로젝트를 Set에 등록한다.
+     * 프로젝트 이름이 같으면 중복으로 판단하여 등록하지 않는다.
+     */
     public void addProject(Project project) {
         if (project == null || project.getName() == null
                 || project.getName().trim().isEmpty()) {
             System.out.println("올바른 프로젝트 이름을 입력해주세요.");
             return;
         }
+
         String name = project.getName().trim();
         project.setName(name);
-        if (findProject(project.getName()) != null) {
+
+        // Set.add()는 추가 성공 시 true, 중복 시 false 반환
+        if (projectList.add(project)) {
+            System.out.println("프로젝트가 등록되었습니다.");
+        } else {
             System.out.println("이미 존재하는 프로젝트입니다.");
-            return;
         }
-        projectList.add(project);
-        System.out.println("프로젝트가 등록되었습니다.");
     }
 
-    // 프로젝트 리스트 반환
-    public List<Project> getAllProjects() {
-        return projectList;
+    /**
+     * 프로젝트 목록을 Set 형태로 반환한다.
+     * 외부에서 Set에 직접 추가하거나 삭제하지 못하도록 보호한다.
+     */
+    public Set<Project> getAllProjects() {
+        return Collections.unmodifiableSet(projectList);
     }
 
     // projectList에서 이름이 같은 프로젝트 찾기
@@ -225,7 +240,9 @@ public class ProjectManager {
                 todo.setProjectTags(tags);
             }
         }
-        project.setName(newName);
+        projectList.remove(project);  // 1. 기존 이름으로 Set에서 제거
+        project.setName(newName);    // 2. 프로젝트 이름 변경
+        projectList.add(project);     // 3. 변경된 이름으로 다시 등록
         System.out.println("프로젝트 이름이 변경되었습니다.");
     }
 
@@ -261,17 +278,29 @@ public class ProjectManager {
         }
     }
 
+    /**
+     * 등록된 프로젝트에 번호를 붙여 출력하고,
+     * 사용자가 선택한 프로젝트의 할 일 목록을 조회한다.
+     */
     public void selectProjectAndShowTodos() {
         if (projectList.isEmpty()) {
             System.out.println("등록된 프로젝트가 없습니다.");
             return;
         }
+
+        // 1. Set에 저장된 프로젝트를 순서대로 출력
         System.out.println("----- 프로젝트 목록 -----");
-        for (int i = 0; i < projectList.size(); i++) {
-            System.out.println((i + 1) + ". " + projectList.get(i).getName());
+
+        int i = 1;
+        for (Project project : projectList) {
+            System.out.println(i + ". " + project.getName());
+            i++;
         }
+
+        // 2. 사용자에게 프로젝트 번호 입력받기
         System.out.print("조회할 프로젝트 번호 (취소: 0) : ");
         String input = scanner.nextLine().trim();
+
         int selected;
         try {
             selected = Integer.parseInt(input);
@@ -279,15 +308,25 @@ public class ProjectManager {
             System.out.println("숫자를 입력해주세요.");
             return;
         }
+
         if (selected == 0) {
             return;
         }
+
         if (selected < 1 || selected > projectList.size()) {
             System.out.println("존재하지 않는 프로젝트 번호입니다.");
             return;
         }
-        String name = projectList.get(selected - 1).getName();
-        showProjectTodos(name);
+
+        // 3. 선택한 번호에 해당하는 프로젝트 찾기
+        i = 1;
+        for (Project project : projectList) {
+            if (i == selected) {
+                showProjectTodos(project.getName());
+                return;
+            }
+            i++;
+        }
     }
 
     @Override
