@@ -46,6 +46,9 @@ public class TodoManager {
         this.currentDate = LocalDate.now();
     }
 
+    /**
+     * 전체 메뉴 보여주는 메소드
+     */
     public void showMenu() {
         int choice;
         while(true){
@@ -239,19 +242,6 @@ public class TodoManager {
     }
 
     /**
-     * 할 일의 시간 정해져 있으면 시간 문자열로 반환
-     *
-     * @param todo 시간 정보 확인할 할 일
-     * @return 시간이 있는 경우 " | HH:mm 형식, 없으면 빈 문자열
-     */
-    private String formatTodoTime(Todo todo) {
-        if (todo.getTime() == null) {
-            return "";
-        }
-        return " | "+todo.getTime().format(DateTimeFormatter.ofPattern("HH:mm"));
-    }
-
-    /**
      * 할 일의 날짜를 문자열로 반환하는 메소드
      *
      * @param todo 날짜 정보를 확인할 할 일
@@ -262,6 +252,19 @@ public class TodoManager {
             return "AnyTime";
         }
         return todo.getDate().toString();
+    }
+
+    /**
+     * 할 일의 시간 정해져 있으면 시간 문자열로 반환
+     *
+     * @param todo 시간 정보 확인할 할 일
+     * @return 시간이 있는 경우 " | HH:mm 형식, 없으면 빈 문자열
+     */
+    private String formatTodoTime(Todo todo) {
+        if (todo.getTime() == null) {
+            return "";
+        }
+        return " | "+todo.getTime().format(DateTimeFormatter.ofPattern("HH:mm"));
     }
 
     /**
