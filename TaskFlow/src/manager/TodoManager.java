@@ -3,9 +3,11 @@ package manager;
 import model.Todo;
 
 import java.time.DateTimeException;
+import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.InputMismatchException;
 import java.util.List;
@@ -63,6 +65,7 @@ public class TodoManager {
                 System.out.println("[6. 태그별 할 일 조회]");
                 System.out.println("[7. 완료 상태별 할 일 조회]");
                 System.out.println("[8. AnyTime 목록 조회]");
+                System.out.println("[9. D-Day 목록 조회]");
                 System.out.println("[0. 이전 메뉴]");
                 System.out.println("-".repeat(10)+"MENU"+"-".repeat(10));
                 System.out.print("선택 : ");
@@ -116,6 +119,7 @@ public class TodoManager {
                         }
                     }
                     case 8 -> showAnyTimeTodo();
+                    case 9 -> showDDayTodo();
                     case 0 -> {
                         System.out.println("이전 메뉴로 돌아갑니다");
                         return;
@@ -308,6 +312,55 @@ public class TodoManager {
             String output = (i+1)+". "+todo.getContent()+formatTodoTime(todo)+" | "+(todo.isDone() ? "완료": "미완료");
             if (!todo.getProjectTags().isEmpty()) {
                 output += " | "+todo.getProjectTags();
+            }
+            System.out.println(output);
+        }
+    }
+
+    /**
+     * 이번주와 다음주 미완료 할 일을 D-Day 순으로 출력하는 메소드
+     *
+     * <p>오늘부터 다음주 일요일까지의 할 일 조회</p>
+     *
+     * <p>날짜 있고 미완료 상태인 todo만 조회해서 남은 날짜 적은 순서대로 정렬</p>
+     */
+    public void showDDayTodo() {
+        LocalDate today = LocalDate.now();
+        LocalDate endDate = today.with(DayOfWeek.SUNDAY).plusWeeks(1);
+        List<Todo> result = new ArrayList<>();
+
+        for (Todo todo : todoList) {
+            LocalDate date = todo.getDate();
+            if (date != null && !todo.isDone() && !date.isBefore(today) && !date.isAfter(endDate)) {
+                result.add(todo);
+            }
+        }
+
+        for (int i = 0; i < result.size() - 1; i++) {
+            int minIndex = i;
+            for (int j = i + 1; j < result.size(); j++) {
+                if (result.get(j).getDate().isBefore(result.get(minIndex).getDate())) {
+                    minIndex = j;
+                }
+            }
+            Todo temp = result.get(i);
+            result.set(i, result.get(minIndex));
+            result.set(minIndex, temp);
+        }
+
+        System.out.println("---------- D-Day 목록 ----------");
+
+        if (result.isEmpty()) {
+            System.out.println("예정된 미완료 할 일이 없습니다.");
+            return;
+        }
+
+        for (Todo todo : result) {
+            long days = ChronoUnit.DAYS.between(today, todo.getDate());
+            String dDay = (days == 0) ? "D-Day" : "D-" + days;
+            String output = dDay + " | " + todo.getContent() + formatTodoTime(todo);
+            if (!todo.getProjectTags().isEmpty()) {
+                output += " | " + todo.getProjectTags();
             }
             System.out.println(output);
         }
