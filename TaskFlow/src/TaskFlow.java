@@ -34,6 +34,8 @@ public class TaskFlow {
         todoManager = new TodoManager(scanner);
         // ProjectManager에게 todoManager를 넘겨주어 프로젝트별 할 일을 조회할 수 있게 함
         projectManager = new ProjectManager(scanner, todoManager);
+        // TodoManager에서 기존 프로젝트 목록 조회할 수 있게 함
+        todoManager.setProjectManager(projectManager);
         loadTask();
         showMenu();
     }
