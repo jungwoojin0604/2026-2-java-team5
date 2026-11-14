@@ -17,8 +17,10 @@ import java.util.Scanner;
  * <p>전체 할 일은 todoList에 저장 후
  * currentDate 기준으로 날짜별 조회와 필터링을 진행한다. </p>
  *
+ * <p>날짜가 지정되지 않은 할 일은 Anytime으로 구분하여 별도의 목록으로 조회하게 한다</p>
+ *
  * <p>할 일의 수정, 삭제, 완료 상태 변경은
- * 현재 선택된 날짜의 목록 번호를 기준으로 처리한다.</p>
+ * 현재 선택된 날짜 또는 Anytime의 목록 번호를 기준으로 처리한다.</p>
  */
 public class TodoManager {
     private final Scanner scanner;
@@ -56,6 +58,7 @@ public class TodoManager {
                 System.out.println("[5. 날짜 이동]");
                 System.out.println("[6. 태그별 할 일 조회]");
                 System.out.println("[7. 완료 상태별 할 일 조회]");
+                System.out.println("[8. AnyTime 목록 조회]");
                 System.out.println("[0. 이전 메뉴]");
                 System.out.println("-".repeat(10)+"MENU"+"-".repeat(10));
                 System.out.print("선택 : ");
@@ -108,6 +111,7 @@ public class TodoManager {
                             }
                         }
                     }
+                    case 8 -> showAnyTimeTodo();
                     case 0 -> {
                         System.out.println("이전 메뉴로 돌아갑니다");
                         return;
@@ -127,7 +131,7 @@ public class TodoManager {
      * <p>할 일에 nextId를 고유 id로 부여, 등록 후 nextId 1 증가</p>
      *
      * @param content 등록할 할 일 내용
-     * @param date 등록할 할 일의 날짜
+     * @param date 등록할 할 일의 날짜 (Anytime일 떄는 null)
      * @param time 등록할 할 일의 시간 (미지정시 null로 저장)
      * @param projectTags 등록할 할 일의 태그 목록
      */
@@ -161,7 +165,7 @@ public class TodoManager {
 
         while (true) {
             System.out.println("현재 날짜 (" + currentDate + ")에 바로 등록이 가능합니다");
-            System.out.print("1) 현재 날짜에 등록 2) 날짜 직접 입력 >> ");
+            System.out.print("1) 현재 날짜에 등록 2) 날짜 직접 입력 3) Anytime >> ");
 
             String choice = scanner.nextLine().trim();
 
@@ -180,8 +184,11 @@ public class TodoManager {
                     }
                 }
                 break;
+            } else if (choice.equals("3")) {
+                date = null;
+                break;
             } else {
-                System.out.println("1 또는 2만 입력해주세요");
+                System.out.println("1, 2, 3 중에서 입력해주세요");
             }
         }
 
@@ -223,7 +230,7 @@ public class TodoManager {
         List<Todo> result = new ArrayList<>();
 
         for (Todo todo : todoList) {
-            if (todo.getDate().equals(date)) {
+            if (todo.getDate() != null && todo.getDate().equals(date)) {
                 result.add(todo);
             }
         }
@@ -241,6 +248,19 @@ public class TodoManager {
             return "";
         }
         return " | "+todo.getTime().format(DateTimeFormatter.ofPattern("HH:mm"));
+    }
+
+    /**
+     * 할 일의 날짜를 문자열로 반환하는 메소드
+     *
+     * @param todo 날짜 정보를 확인할 할 일
+     * @return 날짜가 지정되지 않았으면 AnyTime, 지정되었으면 날짜
+     */
+    private String formatTodoDate(Todo todo) {
+        if (todo.getDate() == null) {
+            return "AnyTime";
+        }
+        return todo.getDate().toString();
     }
 
     /**
@@ -266,6 +286,26 @@ public class TodoManager {
                 result += " | " + todo.getProjectTags();
             }
             System.out.println(result);
+        }
+    }
+
+    /**
+     * Anytime 목록 출력하는 메소드
+     */
+    public void showAnyTimeTodo() {
+        List<Todo> result = getAnyTimeTodo();
+        System.out.println("----- Anytime 할 일 목록 -----");
+        if (result.isEmpty()) {
+            System.out.println("등록된 Anytime 할 일이 없습니다");
+            return;
+        }
+        for (int i = 0; i< result.size(); i++) {
+            Todo todo = result.get(i);
+            String output = (i+1)+". "+todo.getContent()+formatTodoTime(todo)+" | "+(todo.isDone() ? "완료": "미완료");
+            if (!todo.getProjectTags().isEmpty()) {
+                output += " | "+todo.getProjectTags();
+            }
+            System.out.println(output);
         }
     }
 
@@ -363,9 +403,25 @@ public class TodoManager {
     }
 
     /**
+     * Anytime에 해당하는 할 일 조회하는 메소드
+     *
+     * @return Anytime에 해당하는 할 일 목록
+     */
+    public List<Todo> getAnyTimeTodo() {
+        List<Todo> result = new ArrayList<>();
+
+        for (Todo todo : todoList) {
+            if (todo.getDate() == null) {
+                result.add(todo);
+            }
+        }
+        return result;
+    }
+
+    /**
      * 사용자가 선택한 할 일의 완료 상태 변경하는 메소드
      *
-     * <p>현재 날짜의 목록 번호로 할 일 선택 후 완료 상태를 현재의 반대로 전환</p>
+     * <p>현재 날짜 또는 Anytime의 목록 번호로 할 일 선택 후 완료 상태를 현재의 반대로 전환</p>
      *
      * <p>선택 취소 또는 할 일 없으면 변경 X</p>
      */
@@ -380,13 +436,13 @@ public class TodoManager {
 
         System.out.println("할 일 상태 변경이 완료되었습니다");
         System.out.println("변경 내용");
-        System.out.println(selectedTodo.getContent()+" | "+selectedTodo.getDate()+formatTodoTime(selectedTodo)+" | "+(selectedTodo.isDone() ? "완료" : "미완료"));
+        System.out.println(selectedTodo.getContent()+" | "+formatTodoDate(selectedTodo)+formatTodoTime(selectedTodo)+" | "+(selectedTodo.isDone() ? "완료" : "미완료"));
     }
 
     /**
      * 사용자가 선택한 할 일 삭제하는 메소드
      *
-     * <p>현재 날짜의 목록 번호로 할 일 선택 후 전체 할 일 목록(todoList)에서 해당 객체 제거</p>
+     * <p>현재 날짜 또는 Anytime의 목록 번호로 할 일 선택 후 전체 할 일 목록(todoList)에서 해당 객체 제거</p>
      *
      * <p>선택을 취소하거나 할 일이 없으면 삭제 X</p>
      */
@@ -405,7 +461,9 @@ public class TodoManager {
     /**
      * 사용자가 선택한 할 일의 정보 수정하는 메소드
      *
-     * <p>현재 날짜의 목록 번호로 할 일 선택 후 내용, 날짜 및 시간, 태그 중 하나 수정 가능</p>
+     * <p>현재 날짜 또는 Anytime의 목록 번호로 할 일 선택 후 내용, 날짜 및 시간, 태그 중 하나 수정 가능</p>
+     *
+     * <p>날짜 및 시간 선택시 날짜 지정 또는 Anytime 지정 가능. 선택 이후 시간 설정 또는 시간 미설정 상태로 지정 가능</p>
      *
      * <p>수정해도 할 일의 고유 id는 계속 유지</p>
      */
@@ -433,20 +491,33 @@ public class TodoManager {
                 break;
 
             case "2":
-                LocalDate newDate;
+                LocalDate newDate = null;
                 while (true) {
-                    System.out.print("수정할 날짜를 입력하세요 (yyyy-MM-dd): ");
-                    String inputDate = scanner.nextLine().trim();
-                    try {
-                        newDate = LocalDate.parse(inputDate);
+                    System.out.println("1) 날짜 지정 2) AnyTime");
+                    System.out.print("선택 : ");
+                    String dateChoice = scanner.nextLine().trim();
+                    if (dateChoice.equals("1")) {
+                        while (true) {
+                            System.out.print("수정할 날짜를 입력하세요 (yyyy-MM-dd): ");
+                            String inputDate = scanner.nextLine().trim();
+                            try {
+                                newDate = LocalDate.parse(inputDate);
+                                break;
+                            } catch (DateTimeException e) {
+                                System.out.println("날짜 형식이 잘못되었습니다.");
+                            }
+                        }
                         break;
-                    } catch (DateTimeException e) {
-                        System.out.println("날짜 형식이 잘못되었습니다.");
+                    } else if (dateChoice.equals("2")) {
+                        newDate = null;
+                        break;
+                    } else {
+                        System.out.println("1 또는 2를 입력해주세요.");
                     }
                 }
                 LocalTime newTime = null;
                 while (true) {
-                    System.out.print("수정할 시간을 입력하세요 (HH:mm, 미입력 상태로 엔터 누르면 시간 미지정): ");
+                    System.out.print("수정할 시간을 입력하세요 (HH:mm, 미입력 시 시간 미지정): ");
                     String inputTime = scanner.nextLine().trim();
                     if (inputTime.isEmpty()) {
                         break;
@@ -485,50 +556,62 @@ public class TodoManager {
         }
         System.out.println("할 일 수정이 완료되었습니다");
         System.out.println("수정 내용");
-        System.out.println(selectedTodo.getContent()+" | "+selectedTodo.getDate()+formatTodoTime(selectedTodo)
+        System.out.println(selectedTodo.getContent()+" | "+formatTodoDate(selectedTodo)+formatTodoTime(selectedTodo)
                 +" | "+selectedTodo.getProjectTags()+" | "+(selectedTodo.isDone() ? "완료" : "미완료"));
     }
 
     /**
-     * 현재 선택된 날짜의 목록 번호로 선택하는 메소드
+     * 현재 날짜 또는 AnyTime 목록에서 할 일을 선택하는 메소드
      *
      * <p> 입력한 번호가 유효하지 않으면 다시 입력 받고, 0 입력하면 선택 취소</p>
      *
-     * <p>할 일 선택에 필요한 공통 처리 담당 (세 가지 메소드에서 이용)</p>
+     * <p>할 일 선택에 필요한 공통 처리 담당 (수정, 삭제, 완료 상태 변경 메소드에서 이용)</p>
      *
      * @param message 번호 입력시 표시될 안내 문구
      * @return 선택된 Todo 객체, 취소하거나 할 일 없으면 null
      */
     private Todo selectTodo(String message) {
-        List<Todo> result = getTodo(currentDate);
+        System.out.println("1) 현재 날짜 할 일");
+        System.out.println("2) AnyTime 할 일");
+        System.out.print("선택 : ");
+        String choice = scanner.nextLine().trim();
+        List<Todo> result;
+
+        if (choice.equals("1")) {
+            result = getTodo(currentDate);
+        } else if (choice.equals("2")) {
+            result = getAnyTimeTodo();
+        } else {
+            System.out.println("잘못된 선택입니다.");
+            return null;
+        }
 
         if (result.isEmpty()) {
-            System.out.println("현재 날짜에 할 일이 없습니다");
+            System.out.println("해당 목록에 할 일이 없습니다.");
             return null;
         }
 
         while (true) {
-            System.out.print(message+ "할 일 번호 (취소는 0 입력) : ");
+            System.out.print(message + "할 일 번호 (취소는 0 입력) : ");
             int number;
-
             try {
                 number = Integer.parseInt(scanner.nextLine().trim());
             } catch (NumberFormatException e) {
-                System.out.println("숫자를 입력하세요");
+                System.out.println("숫자를 입력하세요.");
                 continue;
             }
 
             if (number == 0) {
-                System.out.println("선택을 취소했습니다");
+                System.out.println("선택을 취소했습니다.");
                 return null;
             }
 
             if (number < 1 || number > result.size()) {
-                System.out.println("잘못된 번호입니다. 다시 입력하세요");
+                System.out.println("잘못된 번호입니다. 다시 입력하세요.");
                 continue;
             }
 
-            return result.get(number-1);
+            return result.get(number - 1);
         }
     }
 
