@@ -697,7 +697,7 @@ public class TodoManager {
         String[] str = new String[todoList.size()];
         int i = 0;
         for (Todo todo : todoList) {
-            str[i++] = "T|" + todo.getContent() + "|" + todo.getDate() + "|" + (todo.getTime()==null ? "" : todo.getTime())+ "|" + todo.getProjectTags();
+            str[i++] = "T|" + todo.getContent() + "|" + todo.getDate() + "|" + (todo.getTime() == null ? "" : todo.getTime()) + "|" + String.join(",", todo.getProjectTags());
         }
         return String.join("\n", str);
     }
