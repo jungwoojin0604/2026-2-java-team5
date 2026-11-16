@@ -6,8 +6,9 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.StandardOpenOption;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
+import java.time.LocalTime;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.InputMismatchException;
@@ -79,30 +80,44 @@ public class TaskFlow {
         }
     }
 
+    /**
+     * 파일에서 프로젝트와 할 일을 불러온다.
+     *
+     * <p>저장 형식 (구분자 |, 날짜·시간은 ISO-8601)</p>
+     * <pre>
+     * P|이름|2026-11-13T04:20
+     * T|내용|2026-11-13|18:30|태그1,태그2|false   (시간 없으면 빈칸, Anytime이면 날짜 빈칸, 마지막 칸은 완료 여부)
+     * </pre>
+     */
     private void loadTask() {
-        while(scanner2.hasNextLine()){
-            DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
-            String[] info = scanner2.nextLine().split("\\|");
-            if(info[0].trim().replace("\uFEFF", "").equals("P")) {
-
+        while (scanner2.hasNextLine()) {
+            String line = scanner2.nextLine().replace("\uFEFF", "");
+            if (line.trim().isEmpty()) continue;
+            // -1: 뒤쪽 빈칸(시간·태그 없음)도 버리지 않고 칸 수를 유지
+            String[] info = line.split("\\|", -1);
+            String type = info[0].trim();
+            if (type.equals("P")) {
                 String name = info[1].trim();
-                LocalDateTime date = LocalDateTime.parse(info[2], formatter);
-                projectManager.getAllProjects().add(new Project(name, date));
-            }
-            else if(info[0].trim().replace("\uFEFF", "").equals("T")) {
+                LocalDateTime deadLine = LocalDateTime.parse(info[2].trim());
+                projectManager.addProject(new Project(name, deadLine));
+            } else if (type.equals("T")) {
                 String name = info[1].trim();
-                LocalDateTime date = LocalDateTime.parse(info[2], formatter);
+                String dateText = info[2].trim();
+                String timeText = info[3].trim();
+                LocalDate date = (dateText.isEmpty() || dateText.equals("null")) ? null : LocalDate.parse(dateText);
+                LocalTime time = timeText.isEmpty() ? null : LocalTime.parse(timeText);
                 List<String> projectTags = new ArrayList<>();
-                for (String tag : info[3].split(",")) {
+                for (String tag : info[4].split(",")) {
                     if (!tag.trim().isEmpty()) {
                         projectTags.add(tag.trim());
                     }
                 }
-                todoManager.addTodo(name, date, projectTags);
+                // 완료 여부 칸이 없는 옛 형식 파일은 미완료(false)로 읽음
+                boolean isDone = info.length > 5 && Boolean.parseBoolean(info[5].trim());
+                todoManager.addTodo(name, date, time, projectTags, isDone);
+            } else {
+                System.out.println("알 수 없는 줄을 건너뜁니다: " + line);
             }
-            else System.out.println("!");
         }
     }
-
-
 }
