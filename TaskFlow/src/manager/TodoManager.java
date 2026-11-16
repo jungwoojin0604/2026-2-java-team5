@@ -120,7 +120,7 @@ public class TodoManager {
                             } else {
                                 System.out.println("-".repeat(10)+"상태별 할 일"+"-".repeat(10));
                                 for (Todo todo : result) {
-                                    String output = todo.getContent() + formatTodoTime(todo) + " | " + (todo.isDone() ? "완료" : "미완료");
+                                    String output = todo.getContent() + " | " + formatTodoDate(todo) + formatTodoTime(todo) + " | " + (todo.isDone() ? "완료" : "미완료");
                                     if (!todo.getProjectTags().isEmpty()) {
                                         output += " | " + todo.getProjectTags();
                                     }
@@ -445,15 +445,15 @@ public class TodoManager {
     }
 
     /**
-     * 현재 선택한 날짜에서 완료 상태에 따라 할 일 조회할 수 있는 메소드
+     * 전체 날짜에서 완료 상태에 따라 할 일 조회할 수 있는 메소드
      *
      * @param done true면 완료, false면 미완료
-     * @return 현재 날짜에서 각 상태에 해당하는 할 일 목록
+     * @return 전체 날짜에서 각 상태에 해당하는 할 일 목록
      */
     public List<Todo> getTodoByStatus(boolean done) {
         List<Todo> result = new ArrayList<>();
 
-        for (Todo todo : getTodo(currentDate)) {
+        for (Todo todo : todoList) {
             if (todo.isDone() == done) {
                 result.add(todo);
             }
