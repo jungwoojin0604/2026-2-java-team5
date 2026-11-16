@@ -153,9 +153,10 @@ public class TodoManager {
      * @param date 등록할 할 일의 날짜 (Anytime일 떄는 null)
      * @param time 등록할 할 일의 시간 (미지정시 null로 저장)
      * @param projectTags 등록할 할 일의 태그 목록
+     * @param isDone 등록할 할 일의 완료 여부 (새로 입력하면 false, 파일에서 불러오면 저장된 값)
      */
-    public void addTodo(String content, LocalDate date, LocalTime time, List<String> projectTags) {
-        Todo todo = new Todo(nextId, content, date, time, projectTags);
+    public void addTodo(String content, LocalDate date, LocalTime time, List<String> projectTags, boolean isDone) {
+        Todo todo = new Todo(nextId, content, date, time, projectTags, isDone);
         todoList.add(todo);
         nextId++;
     }
@@ -245,7 +246,7 @@ public class TodoManager {
                 projectTags.add(tag.trim());
             }
         }
-        addTodo(content, date, time, projectTags);
+        addTodo(content, date, time, projectTags, false);
     }
 
     /**
@@ -697,7 +698,7 @@ public class TodoManager {
         String[] str = new String[todoList.size()];
         int i = 0;
         for (Todo todo : todoList) {
-            str[i++] = "T|" + todo.getContent() + "|" + todo.getDate() + "|" + (todo.getTime() == null ? "" : todo.getTime()) + "|" + String.join(",", todo.getProjectTags());
+            str[i++] = "T|" + todo.getContent() + "|" + (todo.getDate() == null ? "" : todo.getDate()) + "|" + (todo.getTime() == null ? "" : todo.getTime()) + "|" + String.join(",", todo.getProjectTags()) + "|" + todo.isDone();
         }
         return String.join("\n", str);
     }
