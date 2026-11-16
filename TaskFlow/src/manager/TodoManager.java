@@ -445,15 +445,15 @@ public class TodoManager {
     }
 
     /**
-     * 전체 날짜에서 완료 상태에 따라 할 일 조회할 수 있는 메소드
+     * 실제 날짜에서 완료 상태에 따라 할 일 조회할 수 있는 메소드
      *
      * @param done true면 완료, false면 미완료
-     * @return 전체 날짜에서 각 상태에 해당하는 할 일 목록
+     * @return 오늘 날짜에서 각 상태에 해당하는 할 일 목록
      */
     public List<Todo> getTodoByStatus(boolean done) {
         List<Todo> result = new ArrayList<>();
 
-        for (Todo todo : todoList) {
+        for (Todo todo : getTodo(LocalDate.now())) {
             if (todo.isDone() == done) {
                 result.add(todo);
             }
