@@ -91,14 +91,14 @@ public class TodoManager {
                     case 6 -> {
                         System.out.print("조회할 태그를 입력하세요 : ");
                         String tag = scanner.nextLine().trim();
-                        List<Todo> result = getTodoByTag(tag);
+                        List<Todo> result = getAllTodoByTag(tag);
 
                         if (result.isEmpty()) {
                             System.out.println("해당 태그의 할 일이 없습니다");
                         } else {
                             System.out.println("-".repeat(10)+"태그별 할 일"+"-".repeat(10));
                             for (Todo todo : result) {
-                                String output = todo.getContent() + formatTodoTime(todo) + " | " + (todo.isDone() ? "완료" : "미완료");
+                                String output = todo.getContent() + " | " + formatTodoDate(todo) + formatTodoTime(todo) + " | " + (todo.isDone() ? "완료" : "미완료");
                                 if (!todo.getProjectTags().isEmpty()) {
                                     output += " | " + todo.getProjectTags();
                                 }
