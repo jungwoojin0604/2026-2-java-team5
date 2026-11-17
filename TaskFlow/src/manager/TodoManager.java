@@ -397,38 +397,41 @@ public class TodoManager {
      *
      * <p>날짜 직접 입력시 존재하지 않는 날짜는 ResolverStyle.STRICT을 통해 검증</p>
      *
+     * <p>잘못된 메뉴 번호 입력 시 오류 메시지를 출력하고 다시 입력받음</p>
+     *
      * <p>날짜 변경 후 할 일 목록은 showTodo() 별도로 호출해야함 (날짜 변경 후 할 일 목록 자동 출력 X)</p>
      */
     public void moveDate() {
-        System.out.println("----- 날짜 이동 -----");
-        System.out.println("1) 어제 2) 내일 3) 날짜 직접 입력");
-        System.out.print("숫자 선택: ");
+        while (true) {
+            System.out.println("----- 날짜 이동 -----");
+            System.out.println("1) 어제 2) 내일 3) 날짜 직접 입력");
+            System.out.print("숫자 선택: ");
 
-        String choice = scanner.nextLine();
+            String choice = scanner.nextLine().trim();
 
-        switch (choice) {
-            case "1":
-                currentDate = currentDate.minusDays(1);
-                break;
-            case "2":
-                currentDate = currentDate.plusDays(1);
-                break;
-            case "3":
-                while (true) {
-                    System.out.print("이동할 날짜를 아래와 같은 형식으로 입력하세요 (yyyy-MM-dd): ");
-                    String inputDate = scanner.nextLine().trim();
+            switch (choice) {
+                case "1":
+                    currentDate = currentDate.minusDays(1);
+                    return;
+                case "2":
+                    currentDate = currentDate.plusDays(1);
+                    return;
+                case "3":
+                    while (true) {
+                        System.out.print("이동할 날짜를 아래와 같은 형식으로 입력하세요 (yyyy-MM-dd): ");
+                        String inputDate = scanner.nextLine().trim();
 
-                    try {
-                        currentDate = LocalDate.parse(inputDate, DateTimeFormatter.ofPattern("uuuu-MM-dd").withResolverStyle(java.time.format.ResolverStyle.STRICT));
-                        break;
-                    } catch (DateTimeException e) {
-                        System.out.println("날짜 형식이 잘못되었습니다. 다시 입력해주세요");
+                        try {
+                            currentDate = LocalDate.parse(inputDate, DateTimeFormatter.ofPattern("uuuu-MM-dd").withResolverStyle(java.time.format.ResolverStyle.STRICT));
+                            break;
+                        } catch (DateTimeException e) {
+                            System.out.println("날짜 형식이 잘못되었습니다. 다시 입력해주세요");
+                        }
                     }
-                }
-                break;
-            default:
-                System.out.println("잘못된 선택입니다");
-                break;
+                    return;
+                default:
+                    System.out.println("잘못된 선택입니다");
+            }
         }
     }
 
