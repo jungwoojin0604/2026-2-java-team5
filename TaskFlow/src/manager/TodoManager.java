@@ -698,7 +698,7 @@ public class TodoManager {
             try {
                 number = Integer.parseInt(scanner.nextLine().trim());
             } catch (NumberFormatException e) {
-                System.out.println("숫자를 입력하세요.");
+                System.out.println("올바른 숫자를 입력하세요.");
                 continue;
             }
 
