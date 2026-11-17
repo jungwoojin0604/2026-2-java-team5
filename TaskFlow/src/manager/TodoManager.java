@@ -89,8 +89,16 @@ public class TodoManager {
                     case 4 -> changeStatus();
                     case 5 -> moveDate();
                     case 6 -> {
-                        System.out.print("조회할 태그를 입력하세요 : ");
-                        String tag = scanner.nextLine().trim();
+                        String tag;
+                        while(true) {
+                            System.out.print("조회할 태그를 입력하세요 : ");
+                            tag = scanner.nextLine().trim();
+                            if(!tag.isEmpty()) {
+                                break;
+                            }
+                            System.out.println("태그를 입력해주세요");
+                        }
+
                         List<Todo> result = getAllTodoByTag(tag);
 
                         if (result.isEmpty()) {
@@ -107,10 +115,17 @@ public class TodoManager {
                         }
                     }
                     case 7 -> {
-                        System.out.println("조회할 할 일 목록의 상태를 선택하세요");
-                        System.out.print("1) 완료 2) 미완료 : ");
-                        int status = scanner.nextInt();
-                        scanner.nextLine();
+                        int status;
+                        while (true) {
+                            System.out.println("조회할 할 일 목록의 상태를 선택하세요");
+                            System.out.print("1) 완료 2) 미완료 : ");
+                            String input = scanner.nextLine().trim();
+                            if (input.equals("1") || input.equals("2")) {
+                                status = Integer.parseInt(input);
+                                break;
+                            }
+                            System.out.println("유효하지 않은 번호입니다. 1 또는 2를 입력해주세요");
+                        }
 
                         if (status == 1 || status == 2) {
                             boolean done = (status == 1);
@@ -127,9 +142,6 @@ public class TodoManager {
                                     System.out.println(output);
                                 }
                             }
-                        }
-                        else {
-                            System.out.println("유효하지 않은 번호입니다. 1 또는 2를 입력해주세요");
                         }
                     }
                     case 8 -> showAnyTimeTodo();
@@ -200,7 +212,7 @@ public class TodoManager {
                     System.out.print("등록할 날짜를 입력하세요 (yyyy-MM-dd): ");
                     String inputDate = scanner.nextLine().trim();
                     try {
-                        date = LocalDate.parse(inputDate);
+                        date = LocalDate.parse(inputDate, DateTimeFormatter.ofPattern("uuuu-MM-dd").withResolverStyle(java.time.format.ResolverStyle.STRICT));
                         break;
                     } catch (DateTimeException e) {
                         System.out.println("날짜 형식이 잘못되었습니다.");
@@ -578,10 +590,20 @@ public class TodoManager {
             return;
         }
 
-        System.out.println("----- 수정할 항목 선택 -----");
-        System.out.println("1) 할 일 내용 2) 날짜 및 시간 3) 태그 4) 수정 취소");
-        System.out.print("선택 : ");
-        String choice = scanner.nextLine();
+        String choice;
+
+        while (true) {
+            System.out.println("----- 수정할 항목 선택 -----");
+            System.out.println("1) 할 일 내용 2) 날짜 및 시간 3) 태그 4) 수정 취소");
+            System.out.print("선택 : ");
+            choice = scanner.nextLine().trim();
+
+            if (choice.equals("1") || choice.equals("2") || choice.equals("3") || choice.equals("4")) {
+                break;
+            }
+
+            System.out.println("잘못된 선택입니다. 다시 입력해주세요.");
+        }
 
         switch (choice) {
             case "1":
@@ -605,7 +627,7 @@ public class TodoManager {
                             System.out.print("수정할 날짜를 입력하세요 (yyyy-MM-dd): ");
                             String inputDate = scanner.nextLine().trim();
                             try {
-                                newDate = LocalDate.parse(inputDate);
+                                newDate = LocalDate.parse(inputDate,DateTimeFormatter.ofPattern("uuuu-MM-dd").withResolverStyle(java.time.format.ResolverStyle.STRICT));
                                 break;
                             } catch (DateTimeException e) {
                                 System.out.println("날짜 형식이 잘못되었습니다.");
@@ -675,19 +697,22 @@ public class TodoManager {
      * @return 선택된 Todo 객체, 취소하거나 할 일 없으면 null
      */
     private Todo selectTodo(String message) {
-        System.out.println("1) 현재 날짜 할 일");
-        System.out.println("2) AnyTime 할 일");
-        System.out.print("선택 : ");
-        String choice = scanner.nextLine().trim();
         List<Todo> result;
+        while (true) {
+            System.out.println("1) 현재 날짜 할 일");
+            System.out.println("2) AnyTime 할 일");
+            System.out.print("선택 : ");
+            String choice = scanner.nextLine().trim();
 
-        if (choice.equals("1")) {
-            result = getTodo(currentDate);
-        } else if (choice.equals("2")) {
-            result = getAnyTimeTodo();
-        } else {
-            System.out.println("잘못된 선택입니다.");
-            return null;
+            if (choice.equals("1")) {
+                result = getTodo(currentDate);
+                break;
+            } else if (choice.equals("2")) {
+                result = getAnyTimeTodo();
+                break;
+            } else {
+                System.out.println("잘못된 입력입니다. 다시 입력하세요");
+            }
         }
 
         if (result.isEmpty()) {
