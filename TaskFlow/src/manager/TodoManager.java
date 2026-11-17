@@ -675,19 +675,22 @@ public class TodoManager {
      * @return 선택된 Todo 객체, 취소하거나 할 일 없으면 null
      */
     private Todo selectTodo(String message) {
-        System.out.println("1) 현재 날짜 할 일");
-        System.out.println("2) AnyTime 할 일");
-        System.out.print("선택 : ");
-        String choice = scanner.nextLine().trim();
         List<Todo> result;
+        while (true) {
+            System.out.println("1) 현재 날짜 할 일");
+            System.out.println("2) AnyTime 할 일");
+            System.out.print("선택 : ");
+            String choice = scanner.nextLine().trim();
 
-        if (choice.equals("1")) {
-            result = getTodo(currentDate);
-        } else if (choice.equals("2")) {
-            result = getAnyTimeTodo();
-        } else {
-            System.out.println("잘못된 선택입니다.");
-            return null;
+            if (choice.equals("1")) {
+                result = getTodo(currentDate);
+                break;
+            } else if (choice.equals("2")) {
+                result = getAnyTimeTodo();
+                break;
+            } else {
+                System.out.println("잘못된 입력입니다. 다시 입력하세요");
+            }
         }
 
         if (result.isEmpty()) {
