@@ -445,25 +445,41 @@ public class TodoManager {
     }
 
     /**
-     * 실제 날짜에서 완료 상태에 따라 할 일 조회할 수 있는 메소드
+     * 실제 오늘 날짜부터 이후의 할 일을 완료 상태에 따라 조회할 수 있는 메소드
+     *
+     * <p>조회 결과는 날짜 오름차순으로 정렬 + Anytime은 마지막에 배치</p>
      *
      * @param done true면 완료, false면 미완료
-     * @return 오늘 날짜에서 각 상태에 해당하는 할 일 목록
+     * @return 오늘 이후 및 Anytime 중 각 상태에 해당하는 할 일 목록
      */
     public List<Todo> getTodoByStatus(boolean done) {
         List<Todo> result = new ArrayList<>();
-
-        for (Todo todo : getTodo(LocalDate.now())) {
-            if (todo.isDone() == done) {
+        LocalDate today = LocalDate.now();
+        for (Todo todo : todoList) {
+            LocalDate date = todo.getDate();
+            if ((date == null || !date.isBefore(today)) && todo.isDone() == done) {
                 result.add(todo);
             }
+        }
+        for (int i = 0; i < result.size() - 1; i++) {
+            int minIndex = i;
+            for (int j = i + 1; j < result.size(); j++) {
+                LocalDate date1 = result.get(j).getDate();
+                LocalDate date2 = result.get(minIndex).getDate();
+                if (date1 != null && (date2 == null || date1.isBefore(date2))) {
+                    minIndex = j;
+                }
+            }
+            Todo temp = result.get(i);
+            result.set(i, result.get(minIndex));
+            result.set(minIndex, temp);
         }
         return result;
     }
 
     /**
      * 전체 날짜에서 지정한 태그 가진 할 일 조회하는 메소드
-     * getTodoByTag(), getTodoByStatus()는 현재 날짜 기준 할 일 필터링, getAllTodoByTag()는 전체 날짜 기준 (Project에서 사용)
+     * getTodoByTag()는 현재 날짜 기준 할 일 필터링, getTodoByStatus()는 실제 오늘 이후 기준, getAllTodoByTag()는 전체 날짜 기준 (Project에서 사용)
      *
      * @param tag 검색할 태그
      * @return 전체 날짜에서 해당 태그를 가진 할 일 목록
