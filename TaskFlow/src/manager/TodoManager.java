@@ -578,10 +578,20 @@ public class TodoManager {
             return;
         }
 
-        System.out.println("----- 수정할 항목 선택 -----");
-        System.out.println("1) 할 일 내용 2) 날짜 및 시간 3) 태그 4) 수정 취소");
-        System.out.print("선택 : ");
-        String choice = scanner.nextLine();
+        String choice;
+
+        while (true) {
+            System.out.println("----- 수정할 항목 선택 -----");
+            System.out.println("1) 할 일 내용 2) 날짜 및 시간 3) 태그 4) 수정 취소");
+            System.out.print("선택 : ");
+            choice = scanner.nextLine().trim();
+
+            if (choice.equals("1") || choice.equals("2") || choice.equals("3") || choice.equals("4")) {
+                break;
+            }
+
+            System.out.println("잘못된 선택입니다. 다시 입력해주세요.");
+        }
 
         switch (choice) {
             case "1":
