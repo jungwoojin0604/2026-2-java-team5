@@ -200,7 +200,7 @@ public class TodoManager {
                     System.out.print("등록할 날짜를 입력하세요 (yyyy-MM-dd): ");
                     String inputDate = scanner.nextLine().trim();
                     try {
-                        date = LocalDate.parse(inputDate);
+                        date = LocalDate.parse(inputDate, DateTimeFormatter.ofPattern("uuuu-MM-dd").withResolverStyle(java.time.format.ResolverStyle.STRICT));
                         break;
                     } catch (DateTimeException e) {
                         System.out.println("날짜 형식이 잘못되었습니다.");
@@ -605,7 +605,7 @@ public class TodoManager {
                             System.out.print("수정할 날짜를 입력하세요 (yyyy-MM-dd): ");
                             String inputDate = scanner.nextLine().trim();
                             try {
-                                newDate = LocalDate.parse(inputDate);
+                                newDate = LocalDate.parse(inputDate,DateTimeFormatter.ofPattern("uuuu-MM-dd").withResolverStyle(java.time.format.ResolverStyle.STRICT));
                                 break;
                             } catch (DateTimeException e) {
                                 System.out.println("날짜 형식이 잘못되었습니다.");
