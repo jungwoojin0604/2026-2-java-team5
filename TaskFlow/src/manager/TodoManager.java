@@ -395,6 +395,8 @@ public class TodoManager {
      *
      * <p>어제, 내일, 직접 입력한 날짜로 currentDate 변경</p>
      *
+     * <p>날짜 직접 입력시 존재하지 않는 날짜는 ResolverStyle.STRICT을 통해 검증</p>
+     *
      * <p>날짜 변경 후 할 일 목록은 showTodo() 별도로 호출해야함 (날짜 변경 후 할 일 목록 자동 출력 X)</p>
      */
     public void moveDate() {
@@ -412,19 +414,21 @@ public class TodoManager {
                 currentDate = currentDate.plusDays(1);
                 break;
             case "3":
-                System.out.print("이동할 날짜를 아래와 같은 형식으로 입력하세요 (yyyy-MM-dd): ");
-                String inputDate = scanner.nextLine();
+                while (true) {
+                    System.out.print("이동할 날짜를 아래와 같은 형식으로 입력하세요 (yyyy-MM-dd): ");
+                    String inputDate = scanner.nextLine().trim();
 
-                try {
-                    currentDate = LocalDate.parse(inputDate);
-                } catch (DateTimeException e) {
-                    System.out.println("날짜 형식이 잘못되었습니다");
-                    return;
+                    try {
+                        currentDate = LocalDate.parse(inputDate, DateTimeFormatter.ofPattern("uuuu-MM-dd").withResolverStyle(java.time.format.ResolverStyle.STRICT));
+                        break;
+                    } catch (DateTimeException e) {
+                        System.out.println("날짜 형식이 잘못되었습니다. 다시 입력해주세요");
+                    }
                 }
                 break;
             default:
                 System.out.println("잘못된 선택입니다");
-                return;
+                break;
         }
     }
 
