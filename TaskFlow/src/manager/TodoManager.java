@@ -107,10 +107,17 @@ public class TodoManager {
                         }
                     }
                     case 7 -> {
-                        System.out.println("조회할 할 일 목록의 상태를 선택하세요");
-                        System.out.print("1) 완료 2) 미완료 : ");
-                        int status = scanner.nextInt();
-                        scanner.nextLine();
+                        int status;
+                        while (true) {
+                            System.out.println("조회할 할 일 목록의 상태를 선택하세요");
+                            System.out.print("1) 완료 2) 미완료 : ");
+                            String input = scanner.nextLine().trim();
+                            if (input.equals("1") || input.equals("2")) {
+                                status = Integer.parseInt(input);
+                                break;
+                            }
+                            System.out.println("유효하지 않은 번호입니다. 1 또는 2를 입력해주세요");
+                        }
 
                         if (status == 1 || status == 2) {
                             boolean done = (status == 1);
@@ -127,9 +134,6 @@ public class TodoManager {
                                     System.out.println(output);
                                 }
                             }
-                        }
-                        else {
-                            System.out.println("유효하지 않은 번호입니다. 1 또는 2를 입력해주세요");
                         }
                     }
                     case 8 -> showAnyTimeTodo();
