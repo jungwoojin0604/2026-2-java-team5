@@ -128,6 +128,9 @@ public class TodoManager {
                                 }
                             }
                         }
+                        else {
+                            System.out.println("유효하지 않은 번호입니다. 1 또는 2를 입력해주세요");
+                        }
                     }
                     case 8 -> showAnyTimeTodo();
                     case 9 -> showDDayTodo();
