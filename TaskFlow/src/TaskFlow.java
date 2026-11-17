@@ -50,6 +50,7 @@ public class TaskFlow {
                 System.out.println("-".repeat(10)+"MENU"+"-".repeat(10));
                 System.out.print("선택 : ");
                 choice = scanner.nextInt();
+                scanner.nextLine();
                 switch (choice){
                     case 1 -> todoManager.showMenu();
                     case 2 -> projectManager.showMenu();

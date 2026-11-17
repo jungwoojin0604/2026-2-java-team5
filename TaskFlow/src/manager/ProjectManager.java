@@ -47,7 +47,6 @@ public class ProjectManager {
             System.out.println("0. 돌아가기");
             System.out.println("--------------------------");
             System.out.print("선택 : ");
-
             String choice = scanner.nextLine().trim();
             switch (choice) {
                 case "1" -> inputProject();
@@ -55,7 +54,9 @@ public class ProjectManager {
                 case "3" -> inputUpdateDeadline();
                 case "4" -> inputDeleteProject();
                 case "5" -> selectProjectAndShowTodos();
-                case "0" -> { return; }
+                case "0" -> {
+                    return;
+                }
                 default -> System.out.println("다시 입력해주세요.");
             }
         }
@@ -75,6 +76,13 @@ public class ProjectManager {
         try {
             //String inputDate -> LocalDateTime deadline 형식: DATE_FORMATTER
             LocalDateTime deadline = LocalDateTime.parse(inputDate, DATE_FORMATTER);
+
+            // 오늘보다 이전 날짜인지 확인
+            if (deadline.toLocalDate().isBefore(LocalDate.now())) {
+                System.out.println("오늘보다 이전 날짜는 등록할 수 없습니다.");
+                return;
+            }
+
             Project project = new Project(name, deadline);
             addProject(project);
         } catch (DateTimeException e) {
@@ -94,12 +102,14 @@ public class ProjectManager {
         String name = project.getName().trim();
         project.setName(name);
 
-        // Set.add()는 추가 성공 시 true, 중복 시 false 반환
-        if (projectList.add(project)) {
-            System.out.println("프로젝트가 등록되었습니다.");
-        } else {
+        // 프로젝트 이름으로 중복 확인
+        if (findProject(name) != null) {
             System.out.println("이미 존재하는 프로젝트입니다.");
+            return;
         }
+
+        projectList.add(project);
+        System.out.println("프로젝트가 등록되었습니다.");
     }
 
     //4. 메뉴 2번 : 프로젝트 이름 수정
@@ -162,6 +172,12 @@ public class ProjectManager {
         String inputDate = scanner.nextLine().trim();
         try {
             LocalDateTime newDeadline = LocalDateTime.parse(inputDate, DATE_FORMATTER);
+
+            // 오늘보다 이전 날짜인지 확인
+            if (newDeadline.toLocalDate().isBefore(LocalDate.now())) {
+                System.out.println("오늘보다 이전 날짜로 수정할 수 없습니다.");
+                return;
+            }
             updateDeadline(name, newDeadline);
         } catch (DateTimeException e) {
             System.out.println("날짜 형식이 잘못되었습니다.");
@@ -307,6 +323,10 @@ public class ProjectManager {
                 Todo::getDate, //Todo객체를 받을 때 todo.getDate로 반환
                 //naturalOrder: 날짜를 오름차순으로 비교
                 //nullsLast: 날짜가 null이면 맨 뒤로
+                Comparator.nullsLast(Comparator.naturalOrder())
+        //날짜가 같으면 시간순 비교
+        ).thenComparing(
+                Todo::getTime,
                 Comparator.nullsLast(Comparator.naturalOrder())
         ));
         return todos;
