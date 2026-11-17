@@ -89,8 +89,16 @@ public class TodoManager {
                     case 4 -> changeStatus();
                     case 5 -> moveDate();
                     case 6 -> {
-                        System.out.print("조회할 태그를 입력하세요 : ");
-                        String tag = scanner.nextLine().trim();
+                        String tag;
+                        while(true) {
+                            System.out.print("조회할 태그를 입력하세요 : ");
+                            tag = scanner.nextLine().trim();
+                            if(!tag.isEmpty()) {
+                                break;
+                            }
+                            System.out.println("태그를 입력해주세요");
+                        }
+
                         List<Todo> result = getAllTodoByTag(tag);
 
                         if (result.isEmpty()) {
