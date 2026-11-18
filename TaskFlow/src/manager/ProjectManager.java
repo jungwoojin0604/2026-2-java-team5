@@ -44,6 +44,7 @@ public class ProjectManager {
             System.out.println("3. 프로젝트 마감일 수정");
             System.out.println("4. 프로젝트 삭제");
             System.out.println("5. 프로젝트별 할 일 조회");
+            System.out.println("6. 프로젝트 조건 검색");
             System.out.println("0. 돌아가기");
             System.out.println("--------------------------");
             System.out.print("선택 : ");
@@ -54,6 +55,7 @@ public class ProjectManager {
                 case "3" -> inputUpdateDeadline();
                 case "4" -> inputDeleteProject();
                 case "5" -> selectProjectAndShowTodos();
+                case "6" -> inputSearchProjects();
                 case "0" -> {
                     return;
                 }
@@ -100,6 +102,11 @@ public class ProjectManager {
             return;
         }
         String name = project.getName().trim();
+        // 저장 파일의 구분 문자가 이름에 포함되지 않도록 검사
+        if (name.contains("|") || name.contains(",")) {
+            System.out.println("프로젝트 이름에 | 또는 , 를 사용할 수 없습니다.");
+            return;
+        }
         project.setName(name);
 
         // 프로젝트 이름으로 중복 확인
@@ -130,6 +137,11 @@ public class ProjectManager {
         newName = newName.trim();
         if (newName.isEmpty()) {
             System.out.println("새로운 프로젝트 이름을 입력해주세요.");
+            return;
+        }
+        // 이름 변경 시에도 저장 파일의 구분 문자 사용 방지
+        if (newName.contains("|") || newName.contains(",")) {
+            System.out.println("프로젝트 이름에 | 또는 , 를 사용할 수 없습니다.");
             return;
         }
         Project project = findProject(oldName);
@@ -331,8 +343,50 @@ public class ProjectManager {
         ));
         return todos;
     }
+    //8. 메뉴 6번 부분검색: 프로젝트 이름의 앞부분이 검색어와 일치하는 프로젝트를 출력
+    public void inputSearchProjects() {
+        System.out.print("검색할 프로젝트 이름의 앞부분: ");
+        String keyword = scanner.nextLine().trim();
 
-    //8. 공통 보조 메소드
+        if (keyword.isEmpty()) {
+            System.out.println("검색어를 입력해주세요.");
+            return;
+        }
+
+        List<Project> result = searchProjectsByPrefix(keyword);
+
+        if (result.isEmpty()) {
+            System.out.println("일치하는 프로젝트가 없습니다.");
+            return;
+        }
+
+        System.out.println("----- 프로젝트 검색 결과 -----");
+
+        for (Project project : result) {
+            System.out.println(project.getName() + " | " + getDDay(project));
+        }
+    }
+    /**
+     * 프로젝트 이름의 앞부분이 검색어와 일치하는 프로젝트를 찾는다.
+     */
+    public List<Project> searchProjectsByPrefix(String keyword) {
+        List<Project> result = new ArrayList<>();
+
+        if (keyword == null || keyword.trim().isEmpty()) {
+            return result;
+        }
+
+        String prefix = keyword.trim();
+
+        for (Project project : projectList) {
+            if (project.getName().startsWith(prefix)) {
+                result.add(project);
+            }
+        }
+
+        return result;
+    }
+    //9. 공통 보조 메소드
     // projectList에서 이름이 같은 프로젝트 반환
     public Project findProject(String name) {
         if (name == null) {
@@ -388,7 +442,7 @@ public class ProjectManager {
         }
     }
 
-    //9. 파일 저장용
+    //10. 파일 저장용
     @Override
     public String toString() {
         String[] str = new String[projectList.size()];
