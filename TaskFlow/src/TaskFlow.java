@@ -15,12 +15,12 @@ import java.util.List;
 import java.util.Scanner;
 
 public class TaskFlow {
-    private File file;
-    private String userName;
+    private final File file;
+    private final String userName;
     private Scanner scanner2;
     private Scanner scanner = new Scanner(System.in);
-    private TodoManager todoManager;
-    private ProjectManager projectManager;
+    private final TodoManager todoManager;
+    private final ProjectManager projectManager;
 
     public TaskFlow(String userName, String file) {
         this.userName = userName;
@@ -41,10 +41,7 @@ public class TaskFlow {
     }
 
     private void showMenu() {
-        Runtime.getRuntime().addShutdownHook(new Thread(() -> {
-            System.out.println("강제 종료합니다. 현재 데이터를 저장합니다.");
-            saveTask();
-        }));
+        Runtime.getRuntime().addShutdownHook(new Thread(this::saveTask));
         int choice;
         while(true){
             try{
