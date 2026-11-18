@@ -9,10 +9,7 @@ import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
-import java.util.ArrayList;
-import java.util.InputMismatchException;
-import java.util.List;
-import java.util.Scanner;
+import java.util.*;
 
 /**
  * 할 일의 등록, 조회, 수정, 삭제, 완료 상태 관리하는 클래스 (TodoManager)
@@ -545,13 +542,16 @@ public class TodoManager {
     /**
      * 전체 할 일에서 키워드가 포함된 할 일 검색하는 메서드 (조건 검색 메서드)
      *
+     * 영문 대소문자 구별하지 않고 검색
+     *
      * @param keyword 검색할 키워드
      * @return 키워드가 포함된 할 일 목록
      */
     public List<Todo> getTodoByKeyword(String keyword) {
         List<Todo> result = new ArrayList<>();
+        String lowerKeyword = keyword.toLowerCase(Locale.ROOT);
         for (Todo todo : todoList) {
-            if (todo.getContent().contains(keyword)) {
+            if (todo.getContent().toLowerCase(Locale.ROOT).contains(lowerKeyword)) {
                 result.add(todo);
             }
         }
