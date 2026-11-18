@@ -3,7 +3,6 @@ import manager.TodoManager;
 import model.Project;
 
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.StandardOpenOption;
 import java.time.LocalDate;
@@ -16,12 +15,12 @@ import java.util.List;
 import java.util.Scanner;
 
 public class TaskFlow {
-    File file;
-    String userName;
-    Scanner scanner2;
-    Scanner scanner = new Scanner(System.in);
-    TodoManager todoManager;
-    ProjectManager projectManager;
+    private File file;
+    private String userName;
+    private Scanner scanner2;
+    private Scanner scanner = new Scanner(System.in);
+    private TodoManager todoManager;
+    private ProjectManager projectManager;
 
     public TaskFlow(String userName, String file) {
         this.userName = userName;
@@ -29,7 +28,7 @@ public class TaskFlow {
         try {
             scanner2 = new Scanner(this.file, "UTF-8");
         } catch (Exception e) {
-            throw new RuntimeException(e);
+            System.out.println("파일을 찾을 수 없습니다.");
         }
         System.out.println(userName+"님의 TaskFlow을 실행합니다.");
         todoManager = new TodoManager(scanner);
@@ -42,9 +41,14 @@ public class TaskFlow {
     }
 
     private void showMenu() {
+        Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+            System.out.println("강제 종료합니다. 현재 데이터를 저장합니다.");
+            saveTask();
+        }));
         int choice;
         while(true){
             try{
+                saveTask();
                 System.out.println("-".repeat(10)+"MENU"+"-".repeat(10));
                 System.out.println("[1. 할 일 관리]\n[2. 프로젝트 관리]\n[0. 종료]");
                 System.out.println("-".repeat(10)+"MENU"+"-".repeat(10));
@@ -76,8 +80,8 @@ public class TaskFlow {
 
 
         } catch (IOException e) {
-            System.out.println("파일이 존재하지않습니다.");
-            throw new RuntimeException(e);
+            System.out.println("저장에 실패했습니다: " + e.getMessage());
+
         }
     }
 
@@ -91,34 +95,42 @@ public class TaskFlow {
      * </pre>
      */
     private void loadTask() {
+        if(scanner2 == null) {
+            System.out.println("저장된 데이터가 없어 새로 시작합니다.");
+            return;
+        }
         while (scanner2.hasNextLine()) {
             String line = scanner2.nextLine().replace("\uFEFF", "");
             if (line.trim().isEmpty()) continue;
-            // -1: 뒤쪽 빈칸(시간·태그 없음)도 버리지 않고 칸 수를 유지
-            String[] info = line.split("\\|", -1);
-            String type = info[0].trim();
-            if (type.equals("P")) {
-                String name = info[1].trim();
-                LocalDateTime deadLine = LocalDateTime.parse(info[2].trim());
-                projectManager.addProject(new Project(name, deadLine));
-            } else if (type.equals("T")) {
-                String name = info[1].trim();
-                String dateText = info[2].trim();
-                String timeText = info[3].trim();
-                LocalDate date = (dateText.isEmpty() || dateText.equals("null")) ? null : LocalDate.parse(dateText);
-                LocalTime time = timeText.isEmpty() ? null : LocalTime.parse(timeText);
-                List<String> projectTags = new ArrayList<>();
-                for (String tag : info[4].split(",")) {
-                    if (!tag.trim().isEmpty()) {
-                        projectTags.add(tag.trim());
+            try {
+                // -1: 뒤쪽 빈칸(시간·태그 없음)도 버리지 않고 칸 수를 유지
+                String[] info = line.split("\\|", -1);
+                String type = info[0].trim();
+                if (type.equals("P")) {
+                    String name = info[1].trim();
+                    LocalDateTime deadLine = LocalDateTime.parse(info[2].trim());
+                    projectManager.addProject(new Project(name, deadLine));
+                } else if (type.equals("T")) {
+                    String name = info[1].trim();
+                    String dateText = info[2].trim();
+                    String timeText = info[3].trim();
+                    LocalDate date = (dateText.isEmpty() || dateText.equals("null")) ? null : LocalDate.parse(dateText);
+                    LocalTime time = timeText.isEmpty() ? null : LocalTime.parse(timeText);
+                    List<String> projectTags = new ArrayList<>();
+                    for (String tag : info[4].split(",")) {
+                        if (!tag.trim().isEmpty()) {
+                            projectTags.add(tag.trim());
+                        }
                     }
+                    // 완료 여부 칸이 없는 옛 형식 파일은 미완료(false)로 읽음
+                    boolean isDone = info.length > 5 && Boolean.parseBoolean(info[5].trim());
+                    todoManager.addTodo(name, date, time, projectTags, isDone);
+                } else {
+                    System.out.println("알 수 없는 줄을 건너뜁니다: " + line);
                 }
-                // 완료 여부 칸이 없는 옛 형식 파일은 미완료(false)로 읽음
-                boolean isDone = info.length > 5 && Boolean.parseBoolean(info[5].trim());
-                todoManager.addTodo(name, date, time, projectTags, isDone);
-            } else {
-                System.out.println("알 수 없는 줄을 건너뜁니다: " + line);
-            }
+            }catch (RuntimeException e) {
+            System.out.println("읽을 수 없는 줄을 건너뜁니다: " + line);
+        }
         }
     }
 }
