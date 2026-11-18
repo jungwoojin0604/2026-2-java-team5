@@ -189,11 +189,13 @@ public class TodoManager {
             System.out.print("할 일을 입력하세요: ");
             content = scanner.nextLine().trim();
 
-            if (!content.isEmpty()) {
+            if (content.isEmpty()) {
+                System.out.println("할 일이 입력되지 않았습니다. 다시 입력해주세요");
+            } else if (content.contains("|")) {
+                System.out.println("'|' 문자는 사용할 수 없습니다. 다시 입력해주세요.");
+            } else {
                 break;
             }
-
-            System.out.println("할 일이 입력되지 않았습니다");
         }
 
        LocalDate date;
@@ -252,7 +254,7 @@ public class TodoManager {
                 System.out.println("- " + project.getName());
             }
         }
-        System.out.println("태그 여러 개 입력시 컴마로 구분하여 입력해주세요");
+        System.out.println("태그 여러 개 입력시 컴마로 구분하여 입력해주세요. 태그가 없으면 Enter를 누르세요");
         System.out.print("태그를 입력하세요: ");
         String inputTag = scanner.nextLine();
         List<String> projectTags = new ArrayList<>();
@@ -607,13 +609,18 @@ public class TodoManager {
 
         switch (choice) {
             case "1":
-                System.out.print("수정할 내용을 입력하세요: ");
-                String newContent = scanner.nextLine().trim();
-                if (newContent.isEmpty()) {
-                    System.out.println("할 일 내용을 입력하세요");
-                    return;
+                while (true) {
+                    System.out.print("수정할 내용을 입력하세요: ");
+                    String newContent = scanner.nextLine().trim();
+                    if (newContent.isEmpty()) {
+                        System.out.println("할 일 내용을 입력하세요");
+                    } else if (newContent.contains("|")) {
+                        System.out.println("'|' 문자는 사용할 수 없습니다. 다시 입력해주세요.");
+                    } else {
+                        selectedTodo.setContent(newContent);
+                        break;
+                    }
                 }
-                selectedTodo.setContent(newContent);
                 break;
 
             case "2":
