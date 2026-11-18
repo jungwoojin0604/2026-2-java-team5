@@ -90,22 +90,23 @@ public class TodoManager {
                     case 4 -> changeStatus();
                     case 5 -> moveDate();
                     case 6 -> {
-                        String tag;
-                        while(true) {
-                            System.out.print("조회할 태그를 입력하세요 : ");
-                            tag = scanner.nextLine().trim();
-                            if(!tag.isEmpty()) {
+                        while (true) {
+                            System.out.print("조회할 태그를 입력하세요 (취소는 0 입력): ");
+                            String tag = scanner.nextLine().trim();
+                            if (tag.equals("0")) {
+                                System.out.println("검색을 취소합니다.");
                                 break;
                             }
-                            System.out.println("태그를 입력해주세요");
-                        }
-
-                        List<Todo> result = getAllTodoByTag(tag);
-
-                        if (result.isEmpty()) {
-                            System.out.println("해당 태그의 할 일이 없습니다");
-                        } else {
-                            System.out.println("-".repeat(10)+"태그별 할 일"+"-".repeat(10));
+                            if (tag.isEmpty()) {
+                                System.out.println("태그를 입력해주세요.");
+                                continue;
+                            }
+                            List<Todo> result = getAllTodoByTag(tag);
+                            if (result.isEmpty()) {
+                                System.out.println("해당 태그의 할 일이 없습니다.");
+                                continue;
+                            }
+                            System.out.println("-".repeat(10) + "태그별 할 일" + "-".repeat(10));
                             for (Todo todo : result) {
                                 String output = todo.getContent() + " | " + formatTodoDate(todo) + formatTodoTime(todo) + " | " + (todo.isDone() ? "완료" : "미완료");
                                 if (!todo.getProjectTags().isEmpty()) {
@@ -113,6 +114,7 @@ public class TodoManager {
                                 }
                                 System.out.println(output);
                             }
+                            break;
                         }
                     }
                     case 7 -> {
@@ -285,7 +287,17 @@ public class TodoManager {
         }
         System.out.println("태그 여러 개 입력시 컴마로 구분하여 입력해주세요. 태그가 없으면 Enter를 누르세요");
         System.out.print("태그를 입력하세요: ");
-        String inputTag = scanner.nextLine();
+        String inputTag;
+        while (true) {
+            inputTag = scanner.nextLine();
+            if (inputTag.contains("|")) {
+                System.out.println("'|' 문자는 사용할 수 없습니다. 다시 입력해주세요.");
+                System.out.print("태그를 입력하세요: ");
+            } else {
+                break;
+            }
+        }
+
         List<String> projectTags = new ArrayList<>();
         for (String tag : inputTag.split(",")) {
             if (!tag.trim().isEmpty()) {
@@ -714,9 +726,18 @@ public class TodoManager {
             case "3":
                 System.out.println("태그 여러 개를 한 번에 수정이 가능합니다. 쉼표를 사용해 입력하세요");
                 System.out.print("수정할 태그를 입력하세요: ");
-                String inputTag = scanner.nextLine();
+                String inputTag;
+                while (true) {
+                    inputTag = scanner.nextLine();
+                    if (inputTag.contains("|")) {
+                        System.out.println("'|' 문자는 사용할 수 없습니다. 다시 입력해주세요.");
+                        System.out.print("수정할 태그를 입력하세요: ");
+                    } else {
+                        break;
+                    }
+                }
                 List<String> newTag = new ArrayList<>();
-                for(String tag : inputTag.split(",")) {
+                for (String tag : inputTag.split(",")) {
                     if (!tag.trim().isEmpty()) {
                         newTag.add(tag.trim());
                     }
@@ -753,6 +774,7 @@ public class TodoManager {
         while (true) {
             System.out.println("1) 현재 날짜 할 일");
             System.out.println("2) AnyTime 할 일");
+            System.out.println("0) 취소");
             System.out.print("선택 : ");
             String choice = scanner.nextLine().trim();
 
@@ -762,7 +784,11 @@ public class TodoManager {
             } else if (choice.equals("2")) {
                 result = getAnyTimeTodo();
                 break;
-            } else {
+            } else if (choice.equals("0")) {
+                System.out.println("선택을 취소했습니다");
+                return null;
+            }
+            else {
                 System.out.println("잘못된 입력입니다. 다시 입력하세요");
             }
         }
