@@ -60,7 +60,7 @@ public class TodoManager {
     }
 
     /**
-     * 전체 메뉴 보여주는 메소드
+     * 전체 메뉴 보여주는 메서드
      */
     public void showMenu() {
         int choice;
@@ -75,8 +75,9 @@ public class TodoManager {
                 System.out.println("[5. 날짜 이동]");
                 System.out.println("[6. 태그별 할 일 조회]");
                 System.out.println("[7. 완료 상태별 할 일 조회]");
-                System.out.println("[8. AnyTime 목록 조회]");
-                System.out.println("[9. D-Day 목록 조회]");
+                System.out.println("[8. 키워드별 할 일 검색]");
+                System.out.println("[9. AnyTime 목록 조회]");
+                System.out.println("[10. D-Day 목록 조회]");
                 System.out.println("[0. 이전 메뉴]");
                 System.out.println("-".repeat(10)+"MENU"+"-".repeat(10));
                 System.out.print("선택 : ");
@@ -144,8 +145,36 @@ public class TodoManager {
                             }
                         }
                     }
-                    case 8 -> showAnyTimeTodo();
-                    case 9 -> showDDayTodo();
+                    case 8 -> {
+                        while (true) {
+                            System.out.print("검색할 키워드를 입력하세요 (취소는 0 입력): ");
+                            String keyword = scanner.nextLine().trim();
+                            if (keyword.equals("0")) {
+                                System.out.println("검색을 취소합니다.");
+                                break;
+                            }
+                            if (keyword.isEmpty()) {
+                                System.out.println("키워드를 입력해주세요.");
+                                continue;
+                            }
+                            List<Todo> result = getTodoByKeyword(keyword);
+                            if (result.isEmpty()) {
+                                System.out.println("해당 키워드가 포함된 할 일이 없습니다.");
+                                continue;
+                            }
+                            System.out.println("---------- 키워드 검색 결과 ----------");
+                            for (Todo todo : result) {
+                                String output = todo.getContent() + " | " + formatTodoDate(todo) + formatTodoTime(todo) + " | " + (todo.isDone() ? "완료" : "미완료");
+                                if (!todo.getProjectTags().isEmpty()) {
+                                    output += " | " + todo.getProjectTags();
+                                }
+                                System.out.println(output);
+                            }
+                            break;
+                        }
+                    }
+                    case 9 -> showAnyTimeTodo();
+                    case 10 -> showDDayTodo();
                     case 0 -> {
                         System.out.println("이전 메뉴로 돌아갑니다");
                         return;
@@ -160,7 +189,7 @@ public class TodoManager {
     }
 
     /**
-     * 새로운 할 일 생성 후 전체 할 일 목록에 등록하는 메소드
+     * 새로운 할 일 생성 후 전체 할 일 목록에 등록하는 메드
      *
      * <p>할 일에 nextId를 고유 id로 부여, 등록 후 nextId 1 증가</p>
      *
@@ -177,7 +206,7 @@ public class TodoManager {
     }
 
     /**
-     * 사용자로부터 할 일 정보 입력받아 등록하는 메소드
+     * 사용자로부터 할 일 정보 입력받아 등록하는 메서드
      *
      * <p>할 일 내용, 날짜 및 시간, 프로젝트 태그 순서대로 입력받기</p>
      *
@@ -267,7 +296,7 @@ public class TodoManager {
     }
 
     /**
-     * 지정한 날짜에 등록한 할 일 목록 조회하는 메소드
+     * 지정한 날짜에 등록한 할 일 목록 조회하는 메서드
      *
      * @param date 조회할 날짜
      * @return 해당 날짜의 할 일 목록
@@ -284,7 +313,7 @@ public class TodoManager {
     }
 
     /**
-     * 할 일의 날짜를 문자열로 반환하는 메소드
+     * 할 일의 날짜를 문자열로 반환하는 메서드
      *
      * @param todo 날짜 정보를 확인할 할 일
      * @return 날짜가 지정되지 않았으면 AnyTime, 지정되었으면 날짜
@@ -310,7 +339,7 @@ public class TodoManager {
     }
 
     /**
-     * 현재 선택된 날짜의 할 일 목록 출력하는 메소드
+     * 현재 선택된 날짜의 할 일 목록 출력하는 메서드
      *
      * <p>할 일의 목록 번호, 내용, 시간, 완료 여부, 프로젝트 태그 출력</p>
      *
@@ -336,7 +365,7 @@ public class TodoManager {
     }
 
     /**
-     * Anytime 목록 출력하는 메소드
+     * Anytime 목록 출력하는 메서드
      */
     public void showAnyTimeTodo() {
         List<Todo> result = getAnyTimeTodo();
@@ -356,7 +385,7 @@ public class TodoManager {
     }
 
     /**
-     * 이번주와 다음주 미완료 할 일을 D-Day 순으로 출력하는 메소드
+     * 이번주와 다음주 미완료 할 일을 D-Day 순으로 출력하는 메서드
      *
      * <p>오늘부터 다음주 일요일까지의 할 일 조회</p>
      *
@@ -405,7 +434,7 @@ public class TodoManager {
     }
 
     /**
-     * 할 일 조회할 때 기준이 되는 날짜 변경하는 메소드
+     * 할 일 조회할 때 기준이 되는 날짜 변경하는 메서드
      *
      * <p>어제, 내일, 직접 입력한 날짜로 currentDate 변경</p>
      *
@@ -450,7 +479,7 @@ public class TodoManager {
     }
 
     /**
-     * 현재 선택된 날짜에서 지정한 태그 가진 할 일 조회하는 메소드
+     * 현재 선택된 날짜에서 지정한 태그 가진 할 일 조회하는 메서드
      *
      * <p>currentDate 기준으로 검색</p>
      *
@@ -469,7 +498,7 @@ public class TodoManager {
     }
 
     /**
-     * 실제 오늘 날짜부터 이후의 할 일을 완료 상태에 따라 조회할 수 있는 메소드
+     * 실제 오늘 날짜부터 이후의 할 일을 완료 상태에 따라 조회할 수 있는 메서드
      *
      * <p>조회 결과는 날짜 오름차순으로 정렬 + Anytime은 마지막에 배치</p>
      *
@@ -502,7 +531,23 @@ public class TodoManager {
     }
 
     /**
-     * 전체 날짜에서 지정한 태그 가진 할 일 조회하는 메소드
+     * 전체 할 일에서 키워드가 포함된 할 일 검색하는 메서드 (조건 검색 메서드)
+     *
+     * @param keyword 검색할 키워드
+     * @return 키워드가 포함된 할 일 목록
+     */
+    public List<Todo> getTodoByKeyword(String keyword) {
+        List<Todo> result = new ArrayList<>();
+        for (Todo todo : todoList) {
+            if (todo.getContent().contains(keyword)) {
+                result.add(todo);
+            }
+        }
+        return result;
+    }
+
+    /**
+     * 전체 날짜에서 지정한 태그 가진 할 일 조회하는 메서드
      * getTodoByTag()는 현재 날짜 기준 할 일 필터링, getTodoByStatus()는 실제 오늘 이후 기준, getAllTodoByTag()는 전체 날짜 기준 (Project에서 사용)
      *
      * @param tag 검색할 태그
@@ -521,7 +566,7 @@ public class TodoManager {
     }
 
     /**
-     * Anytime에 해당하는 할 일 조회하는 메소드
+     * Anytime에 해당하는 할 일 조회하는 메서드
      *
      * @return Anytime에 해당하는 할 일 목록
      */
@@ -537,7 +582,7 @@ public class TodoManager {
     }
 
     /**
-     * 사용자가 선택한 할 일의 완료 상태 변경하는 메소드
+     * 사용자가 선택한 할 일의 완료 상태 변경하는 메서드
      *
      * <p>현재 날짜 또는 Anytime의 목록 번호로 할 일 선택 후 완료 상태를 현재의 반대로 전환</p>
      *
@@ -558,7 +603,7 @@ public class TodoManager {
     }
 
     /**
-     * 사용자가 선택한 할 일 삭제하는 메소드
+     * 사용자가 선택한 할 일 삭제하는 메서드
      *
      * <p>현재 날짜 또는 Anytime의 목록 번호로 할 일 선택 후 전체 할 일 목록(todoList)에서 해당 객체 제거</p>
      *
@@ -577,7 +622,7 @@ public class TodoManager {
     }
 
     /**
-     * 사용자가 선택한 할 일의 정보 수정하는 메소드
+     * 사용자가 선택한 할 일의 정보 수정하는 메서드
      *
      * <p>현재 날짜 또는 Anytime의 목록 번호로 할 일 선택 후 내용, 날짜 및 시간, 태그 중 하나 수정 가능</p>
      *
@@ -694,11 +739,11 @@ public class TodoManager {
     }
 
     /**
-     * 현재 날짜 또는 AnyTime 목록에서 할 일을 선택하는 메소드
+     * 현재 날짜 또는 AnyTime 목록에서 할 일을 선택하는 메서드
      *
      * <p> 입력한 번호가 유효하지 않으면 다시 입력 받고, 0 입력하면 선택 취소</p>
      *
-     * <p>할 일 선택에 필요한 공통 처리 담당 (수정, 삭제, 완료 상태 변경 메소드에서 이용)</p>
+     * <p>할 일 선택에 필요한 공통 처리 담당 (수정, 삭제, 완료 상태 변경 메서드에서 이용)</p>
      *
      * @param message 번호 입력시 표시될 안내 문구
      * @return 선택된 Todo 객체, 취소하거나 할 일 없으면 null
