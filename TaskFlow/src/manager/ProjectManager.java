@@ -8,6 +8,7 @@ import java.time.LocalDateTime;
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
 import java.time.format.DateTimeFormatter;
+import java.time.format.ResolverStyle;
 import java.util.*;
 
 public class ProjectManager {
@@ -17,7 +18,9 @@ public class ProjectManager {
     // 중복 방지와 등록 순서 유지를 위해 LinkedHashSet 사용
     private final Set<Project> projectList = new LinkedHashSet<>();
     // 프로젝트 날짜 입력 및 출력에 공통으로 사용하는 형식
-    private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
+    private static final DateTimeFormatter DATE_FORMATTER =
+            DateTimeFormatter.ofPattern("uuuu-MM-dd HH:mm")
+                    .withResolverStyle(ResolverStyle.STRICT);
 
     public ProjectManager(Scanner scanner, TodoManager todoManager) {
         this.scanner = scanner; // scanner 작업은 이걸로 통일
