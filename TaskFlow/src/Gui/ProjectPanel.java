@@ -9,6 +9,7 @@ import model.Todo;
 import java.util.List;
 import javax.swing.*;
 import java.awt.*;
+import java.time.format.DateTimeFormatter;
 
 public class ProjectPanel extends JPanel {
     // 기존 데이터 관리 객체를 공유하기 위한 필드
@@ -17,6 +18,8 @@ public class ProjectPanel extends JPanel {
 
     // 프로젝트 목록을 다시 그릴 때 사용하는 패널
     private JPanel projectListPanel;
+    // 선택한 프로젝트의 상세 정보를 표시하는 패널
+    private JPanel rightPanel;
     // Project 화면의 기본 구조 생성
     // 기존 Manager를 전달받아 Project 화면 생성
     public ProjectPanel(ProjectManager projectManager,
@@ -42,6 +45,15 @@ public class ProjectPanel extends JPanel {
         JLabel projectLabel = new JLabel("Projects");
         JButton addProjectButton = new JButton("+");
 
+        // + 버튼 클릭 시 프로젝트 추가 창 열기
+        addProjectButton.addActionListener(e ->
+                ProjectDialog.showAddDialog(
+                        this,
+                        projectManager,
+                        this::refreshProjectList
+                )
+        );
+
         headerPanel.add(projectLabel, BorderLayout.WEST);
         headerPanel.add(addProjectButton, BorderLayout.EAST);
 
@@ -66,7 +78,7 @@ public class ProjectPanel extends JPanel {
 
 
         // 오른쪽 프로젝트 상세 영역
-        JPanel rightPanel = new JPanel(new BorderLayout());
+        rightPanel = new JPanel(new BorderLayout());
         rightPanel.setBackground(Color.WHITE);
         rightPanel.setBorder(BorderFactory.createLineBorder(Color.GRAY));
 
@@ -108,9 +120,12 @@ public class ProjectPanel extends JPanel {
                     }
                 }
 
-                // 실제 데이터를 이용해 프로젝트 항목 생성
+                // 프로젝트 이름을 클릭하면 오른쪽에 상세 정보를 표시
                 ProjectItemPanel item = new ProjectItemPanel(
-                        project, completed, todos.size()
+                        project,
+                        completed,
+                        todos.size(),
+                        () -> showProjectDetails(project)
                 );
 
                 // 목록에 추가
@@ -121,6 +136,80 @@ public class ProjectPanel extends JPanel {
         // 변경된 컴포넌트 배치와 화면 다시 표시
         projectListPanel.revalidate();
         projectListPanel.repaint();
+    }
+
+    // 선택한 프로젝트의 정보를 오른쪽 영역에 표시
+    private void showProjectDetails(Project project) {
+
+        // 이전 상세 화면 제거
+        rightPanel.removeAll();
+
+        // 선택한 프로젝트의 전체 할 일 조회
+        List<Todo> todos =
+                todoManager.getAllTodoByTag(project.getName());
+
+        // 완료한 할 일 개수 계산
+        int completed = 0;
+        for (Todo todo : todos) {
+            if (todo.isDone()) {
+                completed++;
+            }
+        }
+
+        // 완료 비율 계산
+        int progress = todos.isEmpty()
+                ? 0 : completed * 100 / todos.size();
+
+        // 상세 정보를 세로로 배치할 패널
+        JPanel detailPanel = new JPanel();
+        detailPanel.setLayout(
+                new BoxLayout(detailPanel, BoxLayout.Y_AXIS)
+        );
+        detailPanel.setBackground(Color.WHITE);
+        detailPanel.setBorder(
+                BorderFactory.createEmptyBorder(20, 20, 20, 20)
+        );
+
+        // 프로젝트 이름
+        JLabel nameLabel =
+                new JLabel("프로젝트: " + project.getName());
+
+        // 프로젝트 마감일
+        DateTimeFormatter formatter =
+                DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
+
+        String deadline = project.getDeadLine() == null
+                ? "미설정"
+                : project.getDeadLine().format(formatter);
+
+        JLabel deadlineLabel =
+                new JLabel("마감일: " + deadline);
+
+        // 할 일 완료 현황
+        JLabel todoLabel = new JLabel(
+                "할 일: " + completed + " / " + todos.size() + "개 완료"
+        );
+
+        // 진행률 표시
+        JProgressBar progressBar = new JProgressBar(0, 100);
+        progressBar.setValue(progress);
+        progressBar.setStringPainted(true);
+
+        // 상세 화면에 컴포넌트 추가
+        detailPanel.add(nameLabel);
+        detailPanel.add(Box.createVerticalStrut(15));
+        detailPanel.add(deadlineLabel);
+        detailPanel.add(Box.createVerticalStrut(15));
+        detailPanel.add(todoLabel);
+        detailPanel.add(Box.createVerticalStrut(15));
+        detailPanel.add(progressBar);
+
+        // 오른쪽 영역에 상세 화면 표시
+        rightPanel.add(detailPanel, BorderLayout.NORTH);
+
+        // 변경된 화면 다시 그리기
+        rightPanel.revalidate();
+        rightPanel.repaint();
     }
 
 }
