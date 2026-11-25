@@ -634,6 +634,16 @@ public class TodoManager {
     }
 
     /**
+     * 전달받은 할 일 객체를 목록에서 삭제한다.
+     *
+     * @param todo 삭제할 할 일 객체
+     * @return 삭제 성공 여부
+     */
+    public boolean deleteTodo(Todo todo) {
+        return todoList.remove(todo);
+    }
+
+    /**
      * 사용자가 선택한 할 일의 정보 수정하는 메서드
      *
      * <p>현재 날짜 또는 Anytime의 목록 번호로 할 일 선택 후 내용, 날짜 및 시간, 태그 중 하나 수정 가능</p>
