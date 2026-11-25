@@ -57,7 +57,7 @@ public class ProjectGuiTest {
                     "자료 조사",
                     LocalDate.now().plusDays(2),
                     null,
-                    List.of("JAVA 프로젝트"),
+                    List.of("JAVA 프로젝트", "선형대수 과제"),
                     true
             );
 
