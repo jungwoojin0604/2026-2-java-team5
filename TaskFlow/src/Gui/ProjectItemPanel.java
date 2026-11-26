@@ -1,226 +1,172 @@
-
 package Gui;
 
 import model.Project;
 
-import javax.swing.*;
-import java.awt.*;
-import java.time.LocalDate;
-import java.time.temporal.ChronoUnit;
-import model.Todo;
-import java.util.List;
-import java.util.ArrayList;
+import javax.swing.BorderFactory;
+import javax.swing.Box;
+import javax.swing.BoxLayout;
+import javax.swing.JLabel;
+import javax.swing.JPanel;
+import javax.swing.JPopupMenu;
+import javax.swing.SwingConstants;
+import javax.swing.SwingUtilities;
+import java.awt.Color;
+import java.awt.Component;
+import java.awt.Cursor;
+import java.awt.Dimension;
+import java.awt.Point;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
+
+/**
+ * Project 탭 왼쪽 목록의 프로젝트 한 줄 (Figma ProjectRow, 418x48)
+ *
+ * <p>이름(굵게 20pt), D-Day, 진행률 막대(JProgressBar), 완료 비율(%), ⋯ 메뉴 버튼 표시</p>
+ *
+ * <p>줄을 누르면 오른쪽에 그 프로젝트의 할 일이 표시되고(선택한 줄은 연한 하늘색),
+ * ⋯ 버튼 또는 우클릭으로 수정·삭제 메뉴 표시</p>
+ */
 public class ProjectItemPanel extends JPanel {
-    // 프로젝트에 연결된 Todo와 체크박스를 보관
-    private final List<Todo> todos;
-    private final List<JCheckBox> todoCheckBoxes = new ArrayList<>();
+    /** Figma 프로젝트 줄 높이 */
+    public static final int ROW_HEIGHT = 48;
 
-    // 진행률을 나중에도 수정할 수 있도록 필드로 선언
-    private final JProgressBar progressBar;
-    // 프로젝트 한 개의 이름, D-Day, 진행률을 표시
-    // 프로젝트 선택 시 실행할 동작을 전달받음
-    // 프로젝트 정보와 연결된 Todo 목록을 전달받아 표시
-    // Todo 상태가 변경되었을 때 실행할 작업도 전달받음
-    public ProjectItemPanel(Project project, int completed,
-                            int total, List<Todo> todos,
-                            Runnable onSelected,
-                            Runnable onTodoChanged) {
-        // 전달받은 Todo 목록 저장
-        this.todos = todos;
-        setLayout(new BorderLayout(10, 5));
-        setBackground(Color.WHITE);
-        setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+    private final Project project;
+    private final boolean selected;
+    private final JLabel moreLabel;
 
-        // 1. 프로젝트 이름 표시
-        // 프로젝트 이름을 클릭할 수 있는 버튼으로 생성
-        JButton nameButton = new JButton(project.getName());
+    /**
+     * 프로젝트 한 줄 생성
+     *
+     * @param project    표시할 프로젝트
+     * @param completed  완료한 할 일 수
+     * @param total      전체 할 일 수
+     * @param selected   현재 선택된 프로젝트인지
+     * @param onSelected 줄을 눌렀을 때 실행할 동작
+     * @param onEdit     메뉴에서 "수정"을 눌렀을 때 실행할 동작
+     * @param onDelete   메뉴에서 "삭제"를 눌렀을 때 실행할 동작
+     */
+    public ProjectItemPanel(Project project, int completed, int total, boolean selected,
+                            Runnable onSelected, Runnable onEdit, Runnable onDelete) {
+        this.project = project;
+        this.selected = selected;
 
+        setLayout(new BoxLayout(this, BoxLayout.X_AXIS));
+        setBackground(selected ? Theme.ROW_SELECTED : Theme.PANEL_BG);
+        setOpaque(true);
+        setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createMatteBorder(0, 0, 1, 0, Theme.ROW_DIVIDER),
+                BorderFactory.createEmptyBorder(0, 16, 0, 10)));
+        setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
 
-        // 일반 텍스트처럼 보이도록 버튼 디자인 설정
-        nameButton.setBorderPainted(false);
-        nameButton.setContentAreaFilled(false);
-        nameButton.setFocusPainted(false);
-        nameButton.setMargin(new Insets(0, 0, 0, 0));
+        // 1. 프로젝트 이름 (길면 ...으로 줄임)
+        JLabel nameLabel = UiKit.label(project.getName(), Theme.bold(20), Color.BLACK);
+        nameLabel.setMinimumSize(new Dimension(0, 30));
+        nameLabel.setMaximumSize(new Dimension(Integer.MAX_VALUE, 30));
+        nameLabel.setToolTipText(project.getName());
 
-        // 프로젝트 이름 클릭 시 전달받은 동작 실행
-        nameButton.addActionListener(e -> onSelected.run());
+        // 2. D-Day
+        String dDay = project.getDeadLine() == null
+                ? "미설정"
+                : Theme.dDay(project.getDeadLine().toLocalDate());
+        JLabel dDayLabel = UiKit.label(dDay, Theme.plain(14), Theme.TEXT_GRAY);
 
-        // 2. 프로젝트 마감일까지 남은 날짜 계산
-        String dDay = "미설정";
-
-        if (project.getDeadLine() != null) {
-            long days = ChronoUnit.DAYS.between(
-                    LocalDate.now(),
-                    project.getDeadLine().toLocalDate()
-            );
-
-            if (days > 0) {
-                dDay = "D-" + days;
-            } else if (days == 0) {
-                dDay = "D-Day";
-            } else {
-                dDay = "D+" + (-days);
-            }
-        }
-
-        JLabel dDayLabel = new JLabel(dDay);
-
-        // 3. 상단에 프로젝트 이름과 D-Day 배치
-        JPanel topPanel = new JPanel(new BorderLayout());
-        topPanel.setOpaque(false);
-
-        // 프로젝트 펼치기 버튼
-        JButton expandButton = new JButton("▶");
-
-// 펼치기 버튼과 프로젝트 이름을 가로로 배치
-        JPanel namePanel = new JPanel(
-                new FlowLayout(FlowLayout.LEFT, 5, 0)
-        );
-        namePanel.setOpaque(false);
-
-        namePanel.add(expandButton);
-        namePanel.add(nameButton);
-
-        topPanel.add(namePanel, BorderLayout.WEST);
-        topPanel.add(dDayLabel, BorderLayout.EAST);
-
-        // 4. 완료된 할 일의 비율 계산
+        // 3. 완료한 할 일의 비율 (진행률 막대 + %)
         int progress = total == 0 ? 0 : completed * 100 / total;
+        JLabel percentLabel = UiKit.label(progress + "%", Theme.plain(14), Color.BLACK);
+        percentLabel.setHorizontalAlignment(SwingConstants.RIGHT);
+        Dimension percentSize = new Dimension(40, 20);
+        percentLabel.setPreferredSize(percentSize);
+        percentLabel.setMaximumSize(percentSize);
 
-        progressBar = new JProgressBar(0, 100);
-        progressBar.setValue(progress);
-        progressBar.setStringPainted(true);
+        // 4. ⋯ 메뉴 버튼
+        moreLabel = UiKit.label("⋯", Theme.bold(18), Color.BLACK);
+        moreLabel.setToolTipText("수정·삭제");
 
+        add(nameLabel);
+        add(Box.createHorizontalStrut(8));
+        add(dDayLabel);
+        add(Box.createHorizontalStrut(8));
+        add(centered(UiKit.progressBar(progress)));
+        add(Box.createHorizontalStrut(8));
+        add(percentLabel);
+        add(Box.createHorizontalStrut(8));
+        add(moreLabel);
 
-        // 프로젝트 이름과 진행률을 하나로 묶기
-        JPanel summaryPanel = new JPanel(new BorderLayout(0, 5));
-        summaryPanel.setOpaque(false);
-
-        summaryPanel.add(topPanel, BorderLayout.NORTH);
-        summaryPanel.add(progressBar, BorderLayout.SOUTH);
-
-        add(summaryPanel, BorderLayout.NORTH);
-
-        // 프로젝트에 연결된 Todo 목록
-        JPanel todoListPanel = new JPanel();
-        todoListPanel.setLayout(
-                new BoxLayout(todoListPanel, BoxLayout.Y_AXIS)
-        );
-        todoListPanel.setOpaque(false);
-
-        if (todos.isEmpty()) {
-            todoListPanel.add(
-                    new JLabel("연결된 할 일이 없습니다.")
-            );
-        } else {
-
-
-            for (Todo todo : todos) {
-
-                // 현재 완료 상태에 맞는 체크박스 생성
-                JCheckBox checkBox = new JCheckBox(
-                        todo.getContent(),
-                        todo.isDone()
-                );
-
-                // 완료 여부에 따라 취소선 표시
-                checkBox.setText(formatTodoText(todo));
-                checkBox.setOpaque(false);
-                checkBox.setAlignmentX(Component.LEFT_ALIGNMENT);
-
-                // Todo와 연결된 체크박스 저장
-                todoCheckBoxes.add(checkBox);
-
-                // 체크박스를 클릭하면 Todo 상태 변경
-                checkBox.addActionListener(e -> {
-
-                    todo.setDone(checkBox.isSelected());
-
-                    // 모든 프로젝트의 진행률과 체크박스 갱신 요청
-                    onTodoChanged.run();
-                });
-
-                todoListPanel.add(checkBox);
-                todoListPanel.add(Box.createVerticalStrut(5));
-            }
-
-
-        }
-
-        // 처음에는 Todo 목록을 숨김
-        todoListPanel.setVisible(false);
-        add(todoListPanel, BorderLayout.CENTER);
-
-        setMaximumSize(new Dimension(Integer.MAX_VALUE, 80));
+        Dimension size = new Dimension(418, ROW_HEIGHT);
+        setPreferredSize(size);
+        setMaximumSize(new Dimension(Integer.MAX_VALUE, ROW_HEIGHT));
         setAlignmentX(Component.LEFT_ALIGNMENT);
+        setToolTipText(total == 0
+                ? "연결된 할 일 없음"
+                : "할 일 " + completed + " / " + total + "개 완료");
 
-        // 펼치기 버튼을 클릭하면 Todo 목록 표시 상태 변경
-        expandButton.addActionListener(e -> {
+        JPopupMenu menu = UiKit.contextMenu(
+                new String[]{"수정", "삭제"},
+                new Runnable[]{onEdit, onDelete});
 
-            boolean expanded = !todoListPanel.isVisible();
-
-            todoListPanel.setVisible(expanded);
-            expandButton.setText(expanded ? "▼" : "▶");
-
-            // 펼쳤을 때 Todo 목록만큼 패널 높이 증가
-            int height = expanded
-                    ? 80 + Math.max(1, todos.size()) * 28
-                    : 80;
-
-            setMaximumSize(
-                    new Dimension(Integer.MAX_VALUE, height)
-            );
-
-            revalidate();
-            repaint();
+        // ⋯ 클릭: 메뉴, 줄 클릭: 선택, 우클릭: 메뉴
+        moreLabel.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        moreLabel.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mousePressed(MouseEvent e) {
+                menu.show(moreLabel, moreLabel.getWidth() - 120 + 10, moreLabel.getHeight() + 4);
+            }
         });
-
-    }
-
-    // Todo의 완료 상태에 따라 취소선이 있는 문자열 반환
-    private static String formatTodoText(Todo todo) {
-
-        // HTML 특수문자가 글자 그대로 표시되도록 처리
-        String content = todo.getContent()
-                .replace("&", "&amp;")
-                .replace("<", "&lt;")
-                .replace(">", "&gt;");
-
-        if (todo.isDone()) {
-            return "<html><strike>" + content + "</strike></html>";
-        }
-
-        return content;
-
-    }
-        // Todo 완료 상태에 맞춰 체크박스와 진행률을 갱신
-        public void refreshTodoDisplay() {
-
-            int completed = 0;
-
-            // 프로젝트에 연결된 모든 Todo 확인
-            for (int i = 0; i < todos.size(); i++) {
-
-                Todo todo = todos.get(i);
-                JCheckBox checkBox = todoCheckBoxes.get(i);
-
-                // 실제 Todo 완료 상태를 체크박스에 반영
-                checkBox.setSelected(todo.isDone());
-
-                // 완료 상태에 따라 취소선 변경
-                checkBox.setText(formatTodoText(todo));
-
-                if (todo.isDone()) {
-                    completed++;
+        addMouseListener(new MouseAdapter() {
+            @Override
+            public void mousePressed(MouseEvent e) {
+                if (e.isPopupTrigger()) {
+                    showMenuAt(menu, e);
                 }
             }
 
-            // 프로젝트 진행률 다시 계산
-            int progress = todos.isEmpty()
-                    ? 0
-                    : completed * 100 / todos.size();
+            @Override
+            public void mouseReleased(MouseEvent e) {
+                if (e.isPopupTrigger()) {
+                    showMenuAt(menu, e);
+                } else if (SwingUtilities.isLeftMouseButton(e) && contains(e.getPoint())) {
+                    onSelected.run();
+                }
+            }
 
-            progressBar.setValue(progress);
-        }
+            @Override
+            public void mouseEntered(MouseEvent e) {
+                if (!ProjectItemPanel.this.selected) {
+                    setBackground(new Color(0xEAECEF));
+                }
+            }
+
+            @Override
+            public void mouseExited(MouseEvent e) {
+                setBackground(ProjectItemPanel.this.selected ? Theme.ROW_SELECTED : Theme.PANEL_BG);
+            }
+        });
+    }
+
+    private void showMenuAt(JPopupMenu menu, MouseEvent e) {
+        Point p = e.getPoint();
+        menu.show(this, p.x, p.y);
+    }
+
+    /** 이 줄의 프로젝트 */
+    public Project getProject() {
+        return project;
+    }
+
+    /** ⋯ 버튼 (수정 창 위치 기준) */
+    public JLabel getMoreButton() {
+        return moreLabel;
+    }
+
+    /** 높이가 다른 부품을 세로 가운데에 두기 */
+    private static Component centered(Component component) {
+        Box box = Box.createVerticalBox();
+        box.add(Box.createVerticalGlue());
+        box.add(component);
+        box.add(Box.createVerticalGlue());
+        box.setMaximumSize(component.getPreferredSize().width == 0
+                ? new Dimension(90, ROW_HEIGHT)
+                : new Dimension(component.getPreferredSize().width, ROW_HEIGHT));
+        return box;
+    }
 }
-

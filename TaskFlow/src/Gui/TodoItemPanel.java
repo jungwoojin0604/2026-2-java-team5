@@ -4,26 +4,39 @@ import manager.ProjectManager;
 import manager.TodoManager;
 import model.Todo;
 
-import javax.swing.*;
-import java.awt.*;
-import java.awt.font.TextAttribute;
-import java.time.LocalDate;
-import java.time.temporal.ChronoUnit;
-import java.util.HashMap;
-import java.util.Map;
+import javax.swing.BorderFactory;
+import javax.swing.Box;
+import javax.swing.BoxLayout;
+import javax.swing.JLabel;
+import javax.swing.JOptionPane;
+import javax.swing.JPanel;
+import javax.swing.JPopupMenu;
+import javax.swing.SwingUtilities;
+import java.awt.BorderLayout;
+import java.awt.Color;
+import java.awt.Component;
+import java.awt.Cursor;
+import java.awt.Dimension;
+import java.awt.Point;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
 
 /**
- * 개별 할 일의 표시 및 관리를 위한 패널 클래스
+ * 개별 할 일의 표시 및 관리를 위한 한 줄 패널 (Figma TodoRow / ProjectTodoRow)
  *
- * <p>할 일의 내용, 완료 상태, 날짜, 시간 및 D-Day 표시</p>
+ * <p>동그라미 체크(완료 여부), 할 일 내용(18pt), 옆에 회색 날짜·시간(15pt) 표시</p>
  *
- * <p>체크박스를 통한 완료 상태 변경과
- * 팝업 메뉴를 통한 할 일 수정 및 삭제 기능 제공</p>
+ * <p>완료한 할 일은 안쪽이 찬 동그라미와 회색 글자로 표시</p>
+ *
+ * <p>마우스를 올리면 오른쪽에 (i) 아이콘이 보이고, 아이콘에 올리면 상세 정보,
+ * 아이콘 클릭 또는 줄 우클릭 시 수정·삭제 메뉴 표시</p>
  *
  * <p>Calendar 및 Project 화면에서 공통으로 사용 가능하며
  * 데이터 변경 시 콜백을 통해 외부 화면과 연동 가능</p>
  */
 public class TodoItemPanel extends JPanel {
+    /** Figma 할 일 줄 높이 */
+    public static final int ROW_HEIGHT = 33;
 
     // 할 일 정보 및 공유 Manager 객체
     private final Todo todo;
@@ -36,26 +49,20 @@ public class TodoItemPanel extends JPanel {
     private final Runnable onDataChanged;
 
     // 할 일 표시 컴포넌트
-    private final JCheckBox doneCheckBox;
+    private final JLabel checkLabel;
     private final JLabel contentLabel;
     private final JLabel dateTimeLabel;
-    private final JButton menuButton;
+    private final JLabel infoLabel;
 
     /**
      * 개별 할 일의 정보를 표시하는 패널 생성
      *
-     * <p>원형 완료 체크박스, 할 일 내용, 날짜 및 시간,
-     * D-Day와 수정 및 삭제 메뉴 배치</p>
-     *
-     * <p>할 일의 완료 상태 및 데이터 변경에 따른
-     * 화면 갱신 이벤트 설정</p>
-     *
-     * @param todo 화면에 표시할 할 일 객체
-     * @param todoManager 할 일 관리 객체
-     * @param projectManager 프로젝트 관리 객체
+     * @param todo            화면에 표시할 할 일 객체
+     * @param todoManager     할 일 관리 객체
+     * @param projectManager  프로젝트 관리 객체
      * @param requiredProject 필수 지정 프로젝트 (없으면 null)
-     * @param showDate true면 날짜 표시, false면 날짜 생략
-     * @param onDataChanged 데이터 변경 시 실행할 콜백
+     * @param showDate        true면 날짜(또는 Anytime) 표시, false면 시간·D-Day만 표시
+     * @param onDataChanged   데이터 변경 시 실행할 콜백
      */
     public TodoItemPanel(Todo todo,
                          TodoManager todoManager,
@@ -70,272 +77,182 @@ public class TodoItemPanel extends JPanel {
         this.showDate = showDate;
         this.onDataChanged = onDataChanged;
 
-        // 패널 기본 설정
-        setLayout(new BorderLayout(10, 5));
-        setBackground(Color.WHITE);
-        setBorder(BorderFactory.createEmptyBorder(8, 20, 8, 15));
+        // 패널 기본 설정 (왼쪽 29px, 동그라미와 글자 사이 11px)
+        setLayout(new BorderLayout(11, 0));
+        setOpaque(false);
+        setBorder(BorderFactory.createEmptyBorder(0, 29, 0, 20));
 
-        // 1. 원형 완료 체크박스
-        doneCheckBox = new JCheckBox();
-        doneCheckBox.setIcon(new CircleCheckIcon(false));
-        doneCheckBox.setSelectedIcon(new CircleCheckIcon(true));
-        doneCheckBox.setSelected(todo.isDone());
-        doneCheckBox.setOpaque(false);
-        doneCheckBox.setFocusPainted(false);
-        doneCheckBox.setBorderPainted(false);
-        doneCheckBox.setContentAreaFilled(false);
-        doneCheckBox.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        // 1. 동그라미 완료 체크
+        checkLabel = new JLabel();
+        checkLabel.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        checkLabel.setToolTipText("완료 표시");
 
-        // 2. 할 일 내용
-        contentLabel = new JLabel(todo.getContent());
+        // 2. 할 일 내용과 회색 날짜·시간
+        contentLabel = UiKit.label(todo.getContent(), Theme.plain(18), Color.BLACK);
+        dateTimeLabel = UiKit.label(formatDateTime(), Theme.plain(15), Theme.TEXT_DATE);
 
-        // 3. 날짜 및 시간
-        dateTimeLabel = new JLabel(formatDateTime());
-        dateTimeLabel.setForeground(Color.GRAY);
+        JPanel textPanel = new JPanel();
+        textPanel.setLayout(new BoxLayout(textPanel, BoxLayout.X_AXIS));
+        textPanel.setOpaque(false);
+        textPanel.add(contentLabel);
+        textPanel.add(Box.createHorizontalStrut(11));
+        textPanel.add(dateTimeLabel);
+        textPanel.add(Box.createHorizontalGlue());
 
-        // 할 일 내용과 시간을 양쪽으로 배치
-        JPanel contentPanel = new JPanel(new BorderLayout(10, 0));
-        contentPanel.setOpaque(false);
-        contentPanel.add(contentLabel, BorderLayout.CENTER);
-        contentPanel.add(dateTimeLabel, BorderLayout.EAST);
-        contentLabel.setFont(
-                contentLabel.getFont().deriveFont(Font.PLAIN, 14f)
-        );
-        dateTimeLabel.setFont(
-                dateTimeLabel.getFont().deriveFont(Font.PLAIN, 12f)
-        );
+        // 3. 마우스를 올렸을 때만 보이는 (i) 아이콘
+        infoLabel = new JLabel();
+        infoLabel.setPreferredSize(new Dimension(18, 18));
+        infoLabel.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
 
-        // 4. 수정 및 삭제 메뉴 버튼
-        menuButton = new JButton("···");
-        menuButton.setBorderPainted(false);
-        menuButton.setContentAreaFilled(false);
-        menuButton.setFocusPainted(false);
-        // 할 일 관리 메뉴
-        JPopupMenu popupMenu = new JPopupMenu();
-        // 수정 메뉴
-        JMenuItem editItem = new JMenuItem("수정");
+        add(checkLabel, BorderLayout.WEST);
+        add(textPanel, BorderLayout.CENTER);
+        add(infoLabel, BorderLayout.EAST);
 
-        editItem.addActionListener(e ->
-                TodoDialog.showEditDialog(
-                        SwingUtilities.getWindowAncestor(this),
-                        todoManager,
-                        projectManager,
-                        todo,
-                        requiredProject,
-                        onDataChanged
-                )
-        );
-        popupMenu.add(editItem);
-
-        // 삭제 메뉴
-        JMenuItem deleteItem = new JMenuItem("삭제");
-
-        // 삭제 메뉴 클릭 이벤트
-        deleteItem.addActionListener(e -> {
-            int result = JOptionPane.showConfirmDialog(
-                    this,
-                    "'" + todo.getContent() + "' 할 일을 삭제하시겠습니까?",
-                    "할 일 삭제",
-                    JOptionPane.YES_NO_OPTION,
-                    JOptionPane.WARNING_MESSAGE
-            );
-            // 사용자가 삭제에 동의한 경우
-            if (result == JOptionPane.YES_OPTION) {
-
-                if (todoManager.deleteTodo(todo)) {
-                    onDataChanged.run();
-                }
-            }
-        });
-        popupMenu.add(deleteItem);
-
-        // 메뉴 버튼 클릭 시 팝업 메뉴 표시
-        menuButton.addActionListener(e ->
-                popupMenu.show(menuButton, 0, menuButton.getHeight())
-        );
-
-        // 5. 컴포넌트 배치
-        add(doneCheckBox, BorderLayout.WEST);
-        add(contentPanel, BorderLayout.CENTER);
-        add(menuButton, BorderLayout.EAST);
-        setMaximumSize(
-                new Dimension(
-                        Integer.MAX_VALUE,
-                        getPreferredSize().height
-                )
-        );
+        Dimension size = new Dimension(Integer.MAX_VALUE, ROW_HEIGHT);
+        setMaximumSize(size);
+        setPreferredSize(new Dimension(700, ROW_HEIGHT));
         setAlignmentX(Component.LEFT_ALIGNMENT);
 
         // 기존 완료 상태를 화면에 반영
         updateDoneStyle();
 
-        // 체크박스 클릭 시 완료 상태 변경
-        doneCheckBox.addActionListener(e -> {
-            todo.setDone(doneCheckBox.isSelected());
+        // 동그라미 클릭 시 완료 상태 변경
+        UiKit.onClick(checkLabel, () -> {
+            todo.setDone(!todo.isDone());
             updateDoneStyle();
             dateTimeLabel.setText(formatDateTime());
             onDataChanged.run();
         });
+
+        // (i) 클릭 시 수정·삭제 메뉴
+        UiKit.onClick(infoLabel, () -> showMenu(infoLabel, 0, infoLabel.getHeight()));
+
+        installHoverAndMenu();
+    }
+
+    /** 마우스 올림 표시와 우클릭 메뉴를 줄 전체에 연결 */
+    private void installHoverAndMenu() {
+        MouseAdapter adapter = new MouseAdapter() {
+            @Override
+            public void mouseEntered(MouseEvent e) {
+                setInfoVisible(true);
+            }
+
+            @Override
+            public void mouseExited(MouseEvent e) {
+                Point p = SwingUtilities.convertPoint(e.getComponent(), e.getPoint(), TodoItemPanel.this);
+                if (!contains(p)) {
+                    setInfoVisible(false);
+                }
+            }
+
+            @Override
+            public void mousePressed(MouseEvent e) {
+                maybeShowMenu(e);
+            }
+
+            @Override
+            public void mouseReleased(MouseEvent e) {
+                maybeShowMenu(e);
+            }
+
+            private void maybeShowMenu(MouseEvent e) {
+                if (e.isPopupTrigger()) {
+                    Point p = SwingUtilities.convertPoint(e.getComponent(), e.getPoint(), TodoItemPanel.this);
+                    showMenu(TodoItemPanel.this, p.x, p.y);
+                }
+            }
+        };
+        addMouseListener(adapter);
+        for (Component child : new Component[]{checkLabel, contentLabel, dateTimeLabel, infoLabel}) {
+            child.addMouseListener(adapter);
+        }
+    }
+
+    /** (i) 아이콘 보이기/숨기기 (자리는 그대로 두어 줄이 흔들리지 않음) */
+    private void setInfoVisible(boolean visible) {
+        infoLabel.setIcon(visible ? Icons.info() : null);
+        infoLabel.setToolTipText(visible ? buildDetailText() : null);
+    }
+
+    /** 수정·삭제 메뉴 표시 */
+    private void showMenu(Component invoker, int x, int y) {
+        JPopupMenu menu = UiKit.contextMenu(
+                new String[]{"수정", "삭제"},
+                new Runnable[]{this::editTodo, this::deleteTodo});
+        menu.show(invoker, x, y);
+    }
+
+    /** 할 일 수정 창 열기 */
+    private void editTodo() {
+        TodoDialog.showEditDialog(this, todoManager, projectManager,
+                todo, requiredProject, onDataChanged);
+    }
+
+    /** 확인 후 할 일 삭제 */
+    private void deleteTodo() {
+        int result = JOptionPane.showConfirmDialog(
+                this,
+                "'" + todo.getContent() + "' 할 일을 삭제하시겠습니까?",
+                "할 일 삭제",
+                JOptionPane.YES_NO_OPTION,
+                JOptionPane.WARNING_MESSAGE
+        );
+        // 사용자가 삭제에 동의한 경우
+        if (result == JOptionPane.YES_OPTION && todoManager.deleteTodo(todo)) {
+            onDataChanged.run();
+        }
     }
 
     /**
-     * 화면에 표시할 날짜, 시간 및 D-Day 문자열 생성
+     * 할 일 옆에 회색으로 표시할 문자열 생성
      *
-     * <p>showDate 설정에 따라 날짜 표시 여부 결정
-     * (날짜 표시가 활성화된 상태에서 날짜 미지정 시 Anytime 표시)</p>
+     * <p>Project 화면(showDate): 날짜(2026.11.25) 또는 Anytime, 시간이 있으면 시간 추가</p>
      *
-     * <p>시간이 지정된 경우 시간 표시,
-     * 날짜가 지정된 미완료 할 일의 경우 D-Day 추가 표시</p>
-     *
-     * @return 화면에 표시할 날짜, 시간 및 D-Day 문자열
+     * <p>Calendar 화면: 시간과 미완료 할 일의 D-Day</p>
      */
     private String formatDateTime() {
-        String result = "";
+        StringBuilder result = new StringBuilder();
         if (showDate) {
-            if (todo.getDate() == null) {
-                result = "Anytime";
-            } else {
-                result = todo.getDate().toString();
-            }
+            result.append(todo.getDate() == null ? "Anytime" : todo.getDate().format(Theme.DOT_DATE));
         }
         if (todo.getTime() != null) {
-            result += " " + todo.getTime();
-        }
-        // 미완료 할 일의 D-Day 표시
-        String dDay = getTodoDDay();
-        if (!dDay.isEmpty()) {
-            if (!result.isBlank()) {
-                result += " | ";
+            if (!result.isEmpty()) {
+                result.append(' ');
             }
-            result += dDay;
+            result.append(todo.getTime().format(Theme.TIME));
         }
-        return result.trim();
+        if (!showDate && !todo.isDone() && todo.getDate() != null) {
+            if (!result.isEmpty()) {
+                result.append(" · ");
+            }
+            result.append(Theme.dDay(todo.getDate()));
+        }
+        return result.toString();
+    }
+
+    /** (i) 아이콘에 올렸을 때 보이는 상세 정보 */
+    private String buildDetailText() {
+        String date = todo.getDate() == null ? "Anytime" : todo.getDate().format(Theme.DOT_DATE)
+                + " (" + Theme.dDay(todo.getDate()) + ")";
+        String time = todo.getTime() == null ? "미지정" : todo.getTime().format(Theme.TIME);
+        String projects = todo.getProjectTags().isEmpty() ? "없음" : String.join(", ", todo.getProjectTags());
+        return "<html>날짜: " + escape(date)
+                + "<br>시간: " + time
+                + "<br>프로젝트: " + escape(projects)
+                + "<br>상태: " + (todo.isDone() ? "완료" : "미완료")
+                + "<br><font color='#868686'>클릭: 수정·삭제</font></html>";
+    }
+
+    private static String escape(String text) {
+        return text.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;");
     }
 
     /**
-     * 실제 오늘 날짜를 기준으로 할 일의 D-Day 계산
-     *
-     * <p>미래 날짜는 D-n, 오늘은 D-Day,
-     * 지난 날짜는 D+n 형식으로 표시</p>
-     *
-     * @return D-Day 표시 문자열 (완료된 할 일이거나 날짜 미지정이면 빈 문자열 반환)
-     */
-    private String getTodoDDay() {
-        if (todo.isDone() || todo.getDate() == null) {
-            return "";
-        }
-        long days = ChronoUnit.DAYS.between(LocalDate.now(), todo.getDate());
-        if (days > 0) {
-            return "D-" + days;
-        } else if (days == 0) {
-            return "D-Day";
-        } else {
-            return "D+" + (-days);
-        }
-    }
-
-    /**
-     * 할 일의 완료 상태에 따른 글자 스타일 변경
-     *
-     * <p>완료 상태에서는 취소선 및 회색 글자 적용,
-     * 미완료 상태에서는 취소선 해제 및 검은색 글자 적용</p>
+     * 완료 상태에 따른 모양 변경 (Figma: 찬 동그라미 + 회색 글자)
      */
     private void updateDoneStyle() {
-        Map<TextAttribute, Object> attributes = new HashMap<>();
-        attributes.putAll(contentLabel.getFont().getAttributes());
-        if (todo.isDone()) {
-            attributes.put(
-                    TextAttribute.STRIKETHROUGH,
-                    TextAttribute.STRIKETHROUGH_ON
-            );
-            contentLabel.setForeground(Color.GRAY);
-        } else {
-            attributes.put(TextAttribute.STRIKETHROUGH, false);
-            contentLabel.setForeground(Color.BLACK);
-        }
-        contentLabel.setFont(
-                contentLabel.getFont().deriveFont(attributes)
-        );
-    }
-
-    /**
-     * 할 일의 완료 상태를 표시하는 원형 체크박스 아이콘 클래스
-     *
-     * <p>완료 상태는 흰색 체크 표시가 포함된 회색 원으로,
-     * 미완료 상태는 내부가 비어 있는 원으로 표시</p>
-     */
-    private static class CircleCheckIcon implements Icon {
-        private final boolean selected;
-
-        /**
-         * 완료 상태에 따른 원형 체크박스 아이콘 생성
-         *
-         * @param selected true면 완료, false면 미완료
-         */
-        public CircleCheckIcon(boolean selected) {
-            this.selected = selected;
-        }
-
-        /**
-         * 아이콘의 가로 크기 반환
-         *
-         * @return 아이콘 너비 (20px)
-         */
-        @Override
-        public int getIconWidth() {
-            return 20;
-        }
-
-        /**
-         * 아이콘의 세로 크기 반환
-         *
-         * @return 아이콘 높이 (20px)
-         */
-        @Override
-        public int getIconHeight() {
-            return 20;
-        }
-
-        /**
-         * 완료 상태에 따른 원형 체크박스 아이콘 그리기
-         *
-         * <p>ANTIALIASING을 적용하여 원의 테두리를 부드럽게 표시하고
-         * 완료 여부에 따라 원 및 체크 표시 그리기</p>
-         *
-         * @param c 아이콘이 표시되는 컴포넌트
-         * @param g 아이콘을 그리기 위한 Graphics 객체
-         * @param x 아이콘의 시작 x좌표
-         * @param y 아이콘의 시작 y좌표
-         */
-        @Override
-        public void paintIcon(Component c, Graphics g, int x, int y) {
-            Graphics2D g2 = (Graphics2D) g.create();
-            // 원의 테두리를 부드럽게 표시
-            g2.setRenderingHint(
-                    RenderingHints.KEY_ANTIALIASING,
-                    RenderingHints.VALUE_ANTIALIAS_ON
-            );
-            g2.setStroke(new BasicStroke(1.5f));
-            if (selected) {
-                // 완료 상태: 회색 원
-                g2.setColor(new Color(176, 181, 189));
-                g2.fillOval(x + 2, y + 2, 16, 16);
-                // 흰색 체크 표시
-                g2.setColor(Color.WHITE);
-                g2.setStroke(new BasicStroke(
-                        2f,
-                        BasicStroke.CAP_ROUND,
-                        BasicStroke.JOIN_ROUND
-                ));
-                g2.drawLine(x + 6, y + 10, x + 9, y + 13);
-                g2.drawLine(x + 9, y + 13, x + 14, y + 7);
-
-            } else {
-                // 미완료 상태: 빈 원
-                g2.setColor(new Color(170, 170, 170));
-                g2.drawOval(x + 2, y + 2, 16, 16);
-            }
-            g2.dispose();
-        }
+        checkLabel.setIcon(Icons.check(Icons.CheckType.TODO, todo.isDone(), false));
+        contentLabel.setForeground(todo.isDone() ? Theme.TEXT_GRAY : Color.BLACK);
     }
 }
