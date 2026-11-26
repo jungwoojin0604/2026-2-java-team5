@@ -1,4 +1,3 @@
-
 package Gui;
 
 import manager.ProjectManager;
@@ -8,103 +7,94 @@ import javax.swing.*;
 import java.awt.*;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
-import java.time.format.DateTimeParseException;
-import java.time.format.ResolverStyle;
+import java.time.LocalTime;
 
+// TodoDialog와 같은 DatePickerPanel로 프로젝트 마감일을 선택하는 창
 public class ProjectDialog {
 
-    // 프로젝트 마감일을 엄격하게 검사하는 날짜 형식
-    private static final DateTimeFormatter FORMATTER =
-            DateTimeFormatter.ofPattern("uuuu-MM-dd HH:mm")
-                    .withResolverStyle(ResolverStyle.STRICT);
+    // 새 프로젝트 등록
+    public static void showAddDialog(Component parent, ProjectManager pm, Runnable onSaved) {
+        showDialog(parent, pm, null, onSaved);
+    }
 
-    // 프로젝트 추가 창을 열고 입력받은 프로젝트를 등록
-    public static void showAddDialog(
-            Component parent,
-            ProjectManager projectManager,
-            Runnable onSaved) {
+    // 기존 프로젝트의 마감일 변경
+    public static void showDeadlineDialog(Component parent, ProjectManager pm,
+                                          Project project, Runnable onSaved) {
+        showDialog(parent, pm, project, onSaved);
+    }
 
-        // 프로젝트 이름과 마감일 입력칸
-        JTextField nameField = new JTextField(20);
-        JTextField deadlineField = new JTextField(20);
+    // 추가와 수정이 함께 사용하는 입력창
+    private static void showDialog(Component parent, ProjectManager pm,
+                                   Project editing, Runnable onSaved) {
+        boolean isEdit = editing != null;
+        LocalDateTime oldDeadline = isEdit ? editing.getDeadLine() : null;
+        LocalDate initialDate = oldDeadline == null ? LocalDate.now() : oldDeadline.toLocalDate();
+        LocalTime initialTime = oldDeadline == null ? LocalTime.of(23, 59) : oldDeadline.toLocalTime();
 
-        // 입력칸을 2행 2열로 배치
-        JPanel formPanel = new JPanel(new GridLayout(2, 2, 10, 10));
+        JTextField nameField = new JTextField(isEdit ? editing.getName() : "", 18);
+        nameField.setEnabled(!isEdit);
 
-        formPanel.add(new JLabel("프로젝트 이름"));
-        formPanel.add(nameField);
+        // TodoDialog와 동일한 날짜 버튼 + 달력 팝업
+        DatePickerPanel datePicker = new DatePickerPanel(initialDate);
+        datePicker.setPreferredSize(new Dimension(300, 230));
+        JButton dateButton = new JButton(datePicker.getSelectedDate() + " ▼");
+        JPopupMenu datePopup = new JPopupMenu();
+        datePopup.add(datePicker);
+        dateButton.addActionListener(e ->
+                datePopup.show(dateButton, 0, dateButton.getHeight()));
+        datePicker.setOnDateSelected(() -> {
+            dateButton.setText(datePicker.getSelectedDate() + " ▼");
+            datePopup.setVisible(false);
+        });
 
-        formPanel.add(new JLabel("마감일 (yyyy-MM-dd HH:mm)"));
-        formPanel.add(deadlineField);
+        // TodoDialog처럼 시와 분을 따로 선택
+        JSpinner hour = new JSpinner(new SpinnerNumberModel(initialTime.getHour(), 0, 23, 1));
+        JSpinner minute = new JSpinner(new SpinnerNumberModel(initialTime.getMinute(), 0, 59, 1));
+        hour.setEditor(new JSpinner.NumberEditor(hour, "00"));
+        minute.setEditor(new JSpinner.NumberEditor(minute, "00"));
+        JPanel timePanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 5, 0));
+        timePanel.add(hour);
+        timePanel.add(new JLabel(":"));
+        timePanel.add(minute);
 
-        // 잘못 입력하면 창을 다시 열어 수정할 수 있도록 반복
+        JPanel form = new JPanel(new GridLayout(3, 2, 8, 10));
+        form.add(new JLabel("프로젝트 이름"));
+        form.add(nameField);
+        form.add(new JLabel("마감일"));
+        form.add(dateButton);
+        form.add(new JLabel("시간"));
+        form.add(timePanel);
+
+        // 취소할 때까지, 또는 유효한 값을 입력할 때까지 반복
         while (true) {
-
-            int result = JOptionPane.showConfirmDialog(
-                    parent,
-                    formPanel,
-                    "프로젝트 추가",
-                    JOptionPane.OK_CANCEL_OPTION,
-                    JOptionPane.PLAIN_MESSAGE
-            );
-
-            // 취소하거나 창을 닫으면 등록하지 않음
-            if (result != JOptionPane.OK_OPTION) {
-                return;
-            }
+            int result = JOptionPane.showConfirmDialog(parent, form,
+                    isEdit ? "마감일 수정" : "프로젝트 추가", JOptionPane.OK_CANCEL_OPTION);
+            if (result != JOptionPane.OK_OPTION) return;
 
             String name = nameField.getText().trim();
-            String deadlineText = deadlineField.getText().trim();
-
-            // 프로젝트 이름 유효성 검사
-            if (name.isEmpty() || name.contains("|") || name.contains(",")) {
-                JOptionPane.showMessageDialog(
-                        parent,
-                        "프로젝트 이름을 확인해주세요.\n| 또는 , 는 사용할 수 없습니다."
-                );
+            if (name.isEmpty() || name.contains("|") || name.contains(",") ||
+                    (!isEdit && pm.findProject(name) != null)) {
+                JOptionPane.showMessageDialog(parent, "프로젝트 이름을 확인해주세요.");
                 continue;
             }
 
-            // 이미 등록된 프로젝트 이름인지 확인
-            if (projectManager.findProject(name) != null) {
-                JOptionPane.showMessageDialog(
-                        parent,
-                        "이미 존재하는 프로젝트 이름입니다."
-                );
-                continue;
-            }
-
-            LocalDateTime deadline;
-
-            // 마감일 형식과 실제 날짜 검사
             try {
-                deadline = LocalDateTime.parse(deadlineText, FORMATTER);
-            } catch (DateTimeParseException ex) {
-                JOptionPane.showMessageDialog(
-                        parent,
-                        "날짜를 yyyy-MM-dd HH:mm 형식으로 입력해주세요."
-                );
-                continue;
+                hour.commitEdit();
+                minute.commitEdit();
+                LocalDate date = datePicker.getSelectedDate();
+                if (date.isBefore(LocalDate.now())) {
+                    JOptionPane.showMessageDialog(parent, "오늘 이전 날짜는 선택할 수 없습니다.");
+                    continue;
+                }
+                LocalDateTime deadline = date.atTime((int) hour.getValue(), (int) minute.getValue());
+                if (isEdit) pm.updateDeadline(editing.getName(), deadline);
+                else pm.addProject(new Project(name, deadline));
+
+                onSaved.run();
+                return;
+            } catch (java.text.ParseException ex) {
+                JOptionPane.showMessageDialog(parent, "시간은 00~23시, 00~59분으로 입력해주세요.");
             }
-
-            // 과거 날짜 등록 방지
-            if (deadline.toLocalDate().isBefore(LocalDate.now())) {
-                JOptionPane.showMessageDialog(
-                        parent,
-                        "오늘보다 이전 날짜는 등록할 수 없습니다."
-                );
-                continue;
-            }
-
-            // 기존 ProjectManager에 프로젝트 등록
-            projectManager.addProject(new Project(name, deadline));
-
-            // 등록된 프로젝트를 화면에 즉시 반영
-            onSaved.run();
-
-            return;
         }
     }
 }
-
