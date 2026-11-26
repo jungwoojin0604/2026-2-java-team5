@@ -6,15 +6,14 @@ import java.time.LocalDate;
 import java.time.YearMonth;
 
 public class DatePickerPanel extends JPanel {
-
     // 실제 선택된 날짜
     private LocalDate selectedDate;
-
     // 현재 달력에 표시되는 연도 및 월
     private YearMonth currentMonth;
-
     private JLabel monthLabel;
     private JPanel calendarPanel;
+    // 날짜 선택 시 실행할 콜백
+    private Runnable onDateSelected = () -> {};
 
     public DatePickerPanel(LocalDate defaultDate) {
 
@@ -66,6 +65,15 @@ public class DatePickerPanel extends JPanel {
     // 현재 선택된 날짜 반환
     public LocalDate getSelectedDate() {
         return selectedDate;
+    }
+
+    /**
+     * 날짜 선택 시 실행할 동작을 설정한다.
+     *
+     * @param onDateSelected 날짜 선택 콜백
+     */
+    public void setOnDateSelected(Runnable onDateSelected) {
+        this.onDateSelected = onDateSelected;
     }
 
     // 현재 연월에 해당하는 달력 표시
@@ -131,6 +139,7 @@ public class DatePickerPanel extends JPanel {
             dayButton.addActionListener(e -> {
                 selectedDate = date;
                 refreshCalendar();
+                onDateSelected.run();
             });
 
             calendarPanel.add(dayButton);

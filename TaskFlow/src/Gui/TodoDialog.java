@@ -102,12 +102,36 @@ public class TodoDialog {
 
         DatePickerPanel datePicker = new DatePickerPanel(defaultDate);
         datePicker.setPreferredSize(new Dimension(300, 230));
-        datePicker.setMaximumSize(new Dimension(300, 230));
-        datePicker.setAlignmentX(Component.LEFT_ALIGNMENT);
 
+        // 날짜 선택 버튼
+        JButton dateButton = new JButton(
+                datePicker.getSelectedDate().toString() + " ▼"
+        );
+
+        dateButton.setAlignmentX(Component.LEFT_ALIGNMENT);
+        dateButton.setMaximumSize(
+                new Dimension(Integer.MAX_VALUE, 30)
+        );
+
+        // 날짜 선택 팝업
+        JPopupMenu datePopup = new JPopupMenu();
+        datePopup.add(datePicker);
+
+        // 날짜 버튼 클릭 시 달력 표시
+        dateButton.addActionListener(e ->
+                datePopup.show(dateButton, 0, dateButton.getHeight())
+        );
+
+        // 날짜 선택 시 버튼의 날짜 변경 및 팝업 닫기
+        datePicker.setOnDateSelected(() -> {
+            dateButton.setText(
+                    datePicker.getSelectedDate().toString() + " ▼"
+            );
+            datePopup.setVisible(false);
+        });
         formPanel.add(Box.createVerticalStrut(15));
         formPanel.add(dateLabel);
-        formPanel.add(datePicker);
+        formPanel.add(dateButton);
 
         // 날짜 미지정 체크박스
         JCheckBox anytimeCheckBox = new JCheckBox("Anytime");
@@ -118,12 +142,18 @@ public class TodoDialog {
         // 추가 및 수정 시 날짜 미지정 상태 반영
         anytimeCheckBox.setSelected(defaultDate == null);
 
-        datePicker.setEnabled(!anytimeCheckBox.isSelected());
-
+        // 초기 날짜 선택 상태 설정
+        dateButton.setEnabled(!anytimeCheckBox.isSelected());
+        if (anytimeCheckBox.isSelected()) {
+            dateButton.setText("날짜 미지정");
+        }
         // Anytime 선택 시 날짜 선택 비활성화
-        anytimeCheckBox.addActionListener(e ->
-                datePicker.setEnabled(!anytimeCheckBox.isSelected())
-        );
+        anytimeCheckBox.addActionListener(e -> {
+            boolean anytime = anytimeCheckBox.isSelected();
+            dateButton.setEnabled(!anytime);
+            datePopup.setVisible(false);
+            dateButton.setText(anytime ? "날짜 미지정" : datePicker.getSelectedDate().toString() + " ▼");
+        });
 
         formPanel.add(anytimeCheckBox);
 
