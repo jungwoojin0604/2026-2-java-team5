@@ -7,6 +7,8 @@ import model.Todo;
 import javax.swing.*;
 import java.awt.*;
 import java.awt.font.TextAttribute;
+import java.time.LocalDate;
+import java.time.temporal.ChronoUnit;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -35,7 +37,6 @@ public class TodoItemPanel extends JPanel {
                          String requiredProject,
                          boolean showDate,
                          Runnable onDataChanged) {
-
         this.todo = todo;
         this.todoManager = todoManager;
         this.projectManager = projectManager;
@@ -50,19 +51,14 @@ public class TodoItemPanel extends JPanel {
 
         // 1. 원형 완료 체크박스
         doneCheckBox = new JCheckBox();
-
         doneCheckBox.setIcon(new CircleCheckIcon(false));
         doneCheckBox.setSelectedIcon(new CircleCheckIcon(true));
-
         doneCheckBox.setSelected(todo.isDone());
         doneCheckBox.setOpaque(false);
         doneCheckBox.setFocusPainted(false);
         doneCheckBox.setBorderPainted(false);
         doneCheckBox.setContentAreaFilled(false);
-
-        doneCheckBox.setCursor(
-                Cursor.getPredefinedCursor(Cursor.HAND_CURSOR)
-        );
+        doneCheckBox.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
 
         // 2. 할 일 내용
         contentLabel = new JLabel(todo.getContent());
@@ -74,14 +70,11 @@ public class TodoItemPanel extends JPanel {
         // 할 일 내용과 시간을 양쪽으로 배치
         JPanel contentPanel = new JPanel(new BorderLayout(10, 0));
         contentPanel.setOpaque(false);
-
         contentPanel.add(contentLabel, BorderLayout.CENTER);
         contentPanel.add(dateTimeLabel, BorderLayout.EAST);
-
         contentLabel.setFont(
                 contentLabel.getFont().deriveFont(Font.PLAIN, 14f)
         );
-
         dateTimeLabel.setFont(
                 dateTimeLabel.getFont().deriveFont(Font.PLAIN, 12f)
         );
@@ -91,10 +84,8 @@ public class TodoItemPanel extends JPanel {
         menuButton.setBorderPainted(false);
         menuButton.setContentAreaFilled(false);
         menuButton.setFocusPainted(false);
-
         // 할 일 관리 메뉴
         JPopupMenu popupMenu = new JPopupMenu();
-
         // 수정 메뉴
         JMenuItem editItem = new JMenuItem("수정");
 
@@ -108,7 +99,6 @@ public class TodoItemPanel extends JPanel {
                         onDataChanged
                 )
         );
-
         popupMenu.add(editItem);
 
         // 삭제 메뉴
@@ -116,7 +106,6 @@ public class TodoItemPanel extends JPanel {
 
         // 삭제 메뉴 클릭 이벤트
         deleteItem.addActionListener(e -> {
-
             int result = JOptionPane.showConfirmDialog(
                     this,
                     "'" + todo.getContent() + "' 할 일을 삭제하시겠습니까?",
@@ -124,7 +113,6 @@ public class TodoItemPanel extends JPanel {
                     JOptionPane.YES_NO_OPTION,
                     JOptionPane.WARNING_MESSAGE
             );
-
             // 사용자가 삭제에 동의한 경우
             if (result == JOptionPane.YES_OPTION) {
 
@@ -133,7 +121,6 @@ public class TodoItemPanel extends JPanel {
                 }
             }
         });
-
         popupMenu.add(deleteItem);
 
         // 메뉴 버튼 클릭 시 팝업 메뉴 표시
@@ -145,14 +132,12 @@ public class TodoItemPanel extends JPanel {
         add(doneCheckBox, BorderLayout.WEST);
         add(contentPanel, BorderLayout.CENTER);
         add(menuButton, BorderLayout.EAST);
-
         setMaximumSize(
                 new Dimension(
                         Integer.MAX_VALUE,
                         getPreferredSize().height
                 )
         );
-
         setAlignmentX(Component.LEFT_ALIGNMENT);
 
         // 기존 완료 상태를 화면에 반영
@@ -161,9 +146,8 @@ public class TodoItemPanel extends JPanel {
         // 체크박스 클릭 시 완료 상태 변경
         doneCheckBox.addActionListener(e -> {
             todo.setDone(doneCheckBox.isSelected());
-
             updateDoneStyle();
-
+            dateTimeLabel.setText(formatDateTime());
             onDataChanged.run();
         });
     }
@@ -171,7 +155,6 @@ public class TodoItemPanel extends JPanel {
     // 화면에 표시할 날짜 및 시간 문자열 반환
     private String formatDateTime() {
         String result = "";
-
         if (showDate) {
             if (todo.getDate() == null) {
                 result = "Anytime";
@@ -179,12 +162,38 @@ public class TodoItemPanel extends JPanel {
                 result = todo.getDate().toString();
             }
         }
-
         if (todo.getTime() != null) {
             result += " " + todo.getTime();
         }
-
+        // 미완료 할 일의 D-Day 표시
+        String dDay = getTodoDDay();
+        if (!dDay.isEmpty()) {
+            if (!result.isBlank()) {
+                result += " | ";
+            }
+            result += dDay;
+        }
         return result.trim();
+    }
+
+    /**
+     * 실제 오늘 날짜를 기준으로 할 일의 D-Day를 계산한다.
+     *
+     * @return D-Day 표시 문자열
+     *         완료된 할 일이거나 날짜 미지정이면 빈 문자열 반환
+     */
+    private String getTodoDDay() {
+        if (todo.isDone() || todo.getDate() == null) {
+            return "";
+        }
+        long days = ChronoUnit.DAYS.between(LocalDate.now(), todo.getDate());
+        if (days > 0) {
+            return "D-" + days;
+        } else if (days == 0) {
+            return "D-Day";
+        } else {
+            return "D+" + (-days);
+        }
     }
 
     /**
@@ -193,7 +202,6 @@ public class TodoItemPanel extends JPanel {
     private void updateDoneStyle() {
         Map<TextAttribute, Object> attributes = new HashMap<>();
         attributes.putAll(contentLabel.getFont().getAttributes());
-
         if (todo.isDone()) {
             attributes.put(
                     TextAttribute.STRIKETHROUGH,
@@ -204,7 +212,6 @@ public class TodoItemPanel extends JPanel {
             attributes.remove(TextAttribute.STRIKETHROUGH, false);
             contentLabel.setForeground(Color.BLACK);
         }
-
         contentLabel.setFont(
                 contentLabel.getFont().deriveFont(attributes)
         );
@@ -212,13 +219,10 @@ public class TodoItemPanel extends JPanel {
 
     // 완료 상태에 따른 원형 체크박스 아이콘
     private static class CircleCheckIcon implements Icon {
-
         private final boolean selected;
-
         public CircleCheckIcon(boolean selected) {
             this.selected = selected;
         }
-
         @Override
         public int getIconWidth() {
             return 20;
@@ -231,22 +235,17 @@ public class TodoItemPanel extends JPanel {
 
         @Override
         public void paintIcon(Component c, Graphics g, int x, int y) {
-
             Graphics2D g2 = (Graphics2D) g.create();
-
             // 원의 테두리를 부드럽게 표시
             g2.setRenderingHint(
                     RenderingHints.KEY_ANTIALIASING,
                     RenderingHints.VALUE_ANTIALIAS_ON
             );
-
             g2.setStroke(new BasicStroke(1.5f));
-
             if (selected) {
                 // 완료 상태: 회색 원
                 g2.setColor(new Color(176, 181, 189));
                 g2.fillOval(x + 2, y + 2, 16, 16);
-
                 // 흰색 체크 표시
                 g2.setColor(Color.WHITE);
                 g2.setStroke(new BasicStroke(
@@ -254,7 +253,6 @@ public class TodoItemPanel extends JPanel {
                         BasicStroke.CAP_ROUND,
                         BasicStroke.JOIN_ROUND
                 ));
-
                 g2.drawLine(x + 6, y + 10, x + 9, y + 13);
                 g2.drawLine(x + 9, y + 13, x + 14, y + 7);
 
@@ -263,7 +261,6 @@ public class TodoItemPanel extends JPanel {
                 g2.setColor(new Color(170, 170, 170));
                 g2.drawOval(x + 2, y + 2, 16, 16);
             }
-
             g2.dispose();
         }
     }
