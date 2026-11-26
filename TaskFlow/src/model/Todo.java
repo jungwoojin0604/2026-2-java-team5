@@ -127,7 +127,7 @@ public class Todo {
 
     /**
      * 변경할 할 일의 태그
-     * @param projectTags 변경할 할 일 태그
+     * @param projectTags 변경할 할 일의 프로젝트 태그
      */
     public void setProjectTags(List<String> projectTags) {
         this.projectTags = (projectTags == null) ? new ArrayList<>() : new ArrayList<>(projectTags);
