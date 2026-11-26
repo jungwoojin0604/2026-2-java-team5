@@ -14,6 +14,20 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * 날짜별 할 일의 조회 및 관리를 위한 패널 클래스
+ *
+ * <p>현재 선택된 날짜를 기준으로 할 일을 조회하고
+ * 연결된 프로젝트별로 분류하여 표시</p>
+ *
+ * <p>할 일 검색 및 추가, Anytime 목록 조회,
+ * 프로젝트별 목록 펼치기 및 접기 기능 제공</p>
+ *
+ * <p>프로젝트별 D-Day를 표시하고 선택한 날짜에
+ * 할 일이 없는 경우 마감되지 않은 프로젝트 목록 표시</p>
+ *
+ * <p>데이터 변경 시 콜백을 통해 외부 화면과 연동 가능</p>
+ */
 public class TodoPanel extends JPanel {
     // 기존 데이터 관리 객체 공유
     private final TodoManager todoManager;
@@ -34,6 +48,18 @@ public class TodoPanel extends JPanel {
     // 다른 화면의 데이터 갱신을 위한 콜백
     private Runnable onDataChanged = () -> {};
 
+    /**
+     * 날짜별 할 일 조회 및 관리 패널 생성
+     *
+     * <p>날짜 표시 영역, 검색 입력창, 할 일 추가 버튼,
+     * Anytime 전환 버튼 및 스크롤 가능한 할 일 목록 배치</p>
+     *
+     * <p>현재 날짜를 기준으로 초기 할 일 목록 표시 및
+     * 각 버튼과 검색 입력 이벤트 설정</p>
+     *
+     * @param todoManager 할 일 관리 객체
+     * @param projectManager 프로젝트 관리 객체
+     */
     public TodoPanel(TodoManager todoManager, ProjectManager projectManager) {
         this.todoManager = todoManager;
         this.projectManager = projectManager;
@@ -110,7 +136,18 @@ public class TodoPanel extends JPanel {
         refreshTodoList();
     }
 
-    // 현재 날짜의 할 일을 프로젝트별로 표시
+    /**
+     * 현재 조회 모드 및 검색 조건에 따른 할 일 목록 갱신
+     *
+     * <p>선택된 날짜 또는 Anytime 목록을 기준으로 할 일을 조회하고
+     * 검색어가 입력된 경우 해당 검색 조건에 맞는 할 일만 표시</p>
+     *
+     * <p>조회된 할 일을 프로젝트별로 분류하여 표시하고
+     * 기존 프로젝트별 펼치기 및 접기 상태 유지</p>
+     *
+     * <p>조회된 할 일이 없는 경우 검색 결과 없음,
+     * Anytime 할 일 없음 또는 남은 프로젝트 목록 표시</p>
+     */
     public void refreshTodoList() {
         todoListPanel.removeAll();
         String keyword = searchField.getText().trim();
@@ -153,7 +190,14 @@ public class TodoPanel extends JPanel {
         todoListPanel.repaint();
     }
 
-    // 선택된 날짜 변경 및 날짜별 목록 표시
+    /**
+     * 현재 선택된 날짜 변경 및 할 일 목록 갱신
+     *
+     * <p>Anytime 조회 모드를 해제하고
+     * 변경된 날짜를 기준으로 할 일 목록 표시</p>
+     *
+     * @param date 변경할 날짜
+     */
     public void setCurrentDate(LocalDate date) {
         this.currentDate = date;
         anytimeMode = false;
@@ -162,7 +206,17 @@ public class TodoPanel extends JPanel {
         refreshTodoList();
     }
 
-    // 할 일을 프로젝트별로 분류
+    /**
+     * 할 일 목록을 연결된 프로젝트별로 분류
+     *
+     * <p>프로젝트 태그가 없는 할 일은 빈 문자열을 키로 사용하여 분류하고
+     * 여러 프로젝트에 연결된 할 일은 각 프로젝트 그룹에 포함</p>
+     *
+     * <p>LinkedHashMap을 사용하여 그룹 생성 순서 유지</p>
+     *
+     * @param todos 프로젝트별로 분류할 할 일 목록
+     * @return 프로젝트 이름을 키로 하고 할 일 목록을 값으로 하는 Map
+     */
     private Map<String, List<Todo>> groupTodos(List<Todo> todos) {
         Map<String, List<Todo>> groups = new LinkedHashMap<>();
         for (Todo todo : todos) {
@@ -181,9 +235,32 @@ public class TodoPanel extends JPanel {
         return groups;
     }
 
-    // 프로젝트별 할 일 그룹 생성
+    /**
+     * 프로젝트별 할 일 목록을 표시하는 그룹 패널 생성
+     *
+     * <p>프로젝트 이름, 할 일 개수, 프로젝트 D-Day 및
+     * 펼치기 버튼을 포함하는 상단 영역 구성</p>
+     *
+     * <p>TodoItemPanel을 사용하여 그룹에 연결된 개별 할 일을 표시하고
+     * 프로젝트별 펼치기 및 접기 상태 저장</p>
+     *
+     * <p>프로젝트 태그가 없는 그룹은 프로젝트 미지정으로 표시</p>
+     *
+     * @param name 프로젝트 이름 (프로젝트 미지정이면 빈 문자열)
+     * @param todos 해당 그룹에 포함된 할 일 목록
+     * @return 프로젝트별 할 일 그룹 패널
+     */
     private JPanel createGroupPanel(String name, List<Todo> todos) {
         JPanel groupPanel = new JPanel(new BorderLayout()) {
+
+            /**
+             * 그룹 패널의 최대 크기 반환
+             *
+             * <p>가로 방향 확장을 허용하고
+             * 세로 크기는 패널의 기본 권장 높이로 제한</p>
+             *
+             * @return 그룹 패널의 최대 크기
+             */
             @Override
             public Dimension getMaximumSize() {
                 return new Dimension(
@@ -258,23 +335,36 @@ public class TodoPanel extends JPanel {
         return groupPanel;
     }
 
-    // 다른 화면을 갱신할 콜백 설정
+    /**
+     * 데이터 변경 시 외부 화면을 갱신할 콜백 설정
+     *
+     * <p>Calendar와 Project 화면 간 데이터 변경 사항 연동 가능</p>
+     *
+     * @param onDataChanged 데이터 변경 시 실행할 콜백
+     */
     public void setOnDataChanged(Runnable onDataChanged) {
         this.onDataChanged = onDataChanged;
     }
 
-    // 할 일 변경 시 현재 화면과 연결된 화면 갱신
+    /**
+     * 할 일 데이터 변경에 따른 화면 갱신
+     *
+     * <p>현재 할 일 목록을 갱신하고
+     * 등록된 콜백을 실행하여 연결된 외부 화면 갱신</p>
+     */
     private void notifyDataChanged() {
         refreshTodoList();
         onDataChanged.run();
     }
 
     /**
-     * 실제 오늘 날짜를 기준으로 프로젝트 마감일까지
-     * 남은 날짜를 계산한다.
+     * 실제 오늘 날짜를 기준으로 프로젝트 마감일까지의 D-Day 계산
+     *
+     * <p>미래 마감일은 D-n, 오늘은 D-Day,
+     * 지난 마감일은 D+n 형식으로 표시</p>
      *
      * @param name 조회할 프로젝트 이름
-     * @return D-Day 표시 문자열
+     * @return D-Day 표시 문자열 (프로젝트가 존재하지 않으면 빈 문자열, 마감일이 지정되지 않았으면 미설정 반환)
      */
     private String getProjectDDay(String name) {
         Project project = projectManager.findProject(name);
@@ -301,10 +391,15 @@ public class TodoPanel extends JPanel {
     }
 
     /**
-     * 선택한 날짜에 할 일이 없는 경우
-     * 마감되지 않은 프로젝트 목록을 표시한다.
+     * 선택된 날짜에 할 일이 없는 경우 남은 프로젝트 목록 표시
      *
-     * <p>남은 프로젝트도 없으면 안내 문구를 표시한다.</p>
+     * <p>실제 오늘 날짜를 기준으로 마감일이 지정되지 않았거나
+     * 마감일이 지난 프로젝트는 제외</p>
+     *
+     * <p>마감되지 않은 프로젝트의 이름과 D-Day를 표시하고
+     * 할 일 목록 펼치기 버튼은 생략</p>
+     *
+     * <p>표시할 프로젝트가 없는 경우 일정 없음 안내 문구 표시</p>
      */
     private void showRemainingProjects() {
         boolean hasProject = false;

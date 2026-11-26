@@ -14,9 +14,35 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * 할 일 추가 및 수정을 위한 공통 팝업 클래스
+ *
+ * <p>할 일 내용, 날짜, 시간 및 프로젝트 태그 입력 기능 제공</p>
+ *
+ * <p>DatePickerPanel을 활용한 날짜 선택 팝업과
+ * Anytime 및 시간 미지정 기능 제공</p>
+ *
+ * <p>Calendar 및 Project 화면에서 공통으로 사용 가능하며
+ * Project 화면에서 호출 시 해당 프로젝트 필수 지정 가능</p>
+ *
+ * <p>입력값의 유효성 검사 후 할 일 데이터를 저장하고
+ * 콜백을 통해 외부 화면 갱신</p>
+ */
 public class TodoDialog {
 
-    // 할 일 추가 팝업
+    /**
+     * 새로운 할 일 등록을 위한 추가 팝업 표시
+     *
+     * <p>기본 날짜 및 필수 프로젝트 설정을 전달하여
+     * 공통 입력 팝업 호출</p>
+     *
+     * @param owner 팝업의 부모 창
+     * @param todoManager 할 일 관리 객체
+     * @param projectManager 프로젝트 관리 객체
+     * @param defaultDate 기본 선택 날짜 (null이면 Anytime)
+     * @param requiredProject 필수 지정 프로젝트 (없으면 null)
+     * @param onDataChanged 데이터 변경 시 실행할 콜백
+     */
     public static void showAddDialog(
             Window owner,
             TodoManager todoManager,
@@ -29,7 +55,20 @@ public class TodoDialog {
                 defaultDate, requiredProject, null, onDataChanged);
     }
 
-    // 할 일 수정 팝업
+    /**
+     * 기존 할 일의 정보 변경을 위한 수정 팝업 표시
+     *
+     * <p>수정할 할 일 객체를 전달하여
+     * 기존 내용, 날짜, 시간 및 프로젝트 태그가 반영된
+     * 공통 입력 팝업 호출</p>
+     *
+     * @param owner 팝업의 부모 창
+     * @param todoManager 할 일 관리 객체
+     * @param projectManager 프로젝트 관리 객체
+     * @param editingTodo 수정할 할 일 객체
+     * @param requiredProject 필수 지정 프로젝트 (없으면 null)
+     * @param onDataChanged 데이터 변경 시 실행할 콜백
+     */
     public static void showEditDialog(
             Window owner,
             TodoManager todoManager,
@@ -43,7 +82,32 @@ public class TodoDialog {
                 editingTodo, onDataChanged);
     }
 
-    // 추가 및 수정 공통 팝업
+    /**
+     * 할 일 추가 및 수정을 위한 공통 입력 팝업 생성
+     *
+     * <p>수정할 할 일 객체의 존재 여부에 따라
+     * 추가 모드와 수정 모드 구분</p>
+     *
+     * <p>할 일 내용 입력창, 날짜 선택 팝업, Anytime 체크박스,
+     * 시간 지정 영역 및 프로젝트 선택 영역 구성</p>
+     *
+     * <p>필수 지정 프로젝트가 존재하는 경우
+     * 해당 프로젝트의 선택 상태 고정</p>
+     *
+     * <p>입력값의 유효성 검사 후 새로운 할 일을 등록하거나
+     * 기존 할 일의 정보 변경</p>
+     *
+     * <p>데이터 저장 완료 시 콜백 실행 및 팝업 종료,
+     * 취소 또는 창 닫기 시 데이터 변경 없이 종료</p>
+     *
+     * @param owner 팝업의 부모 창
+     * @param todoManager 할 일 관리 객체
+     * @param projectManager 프로젝트 관리 객체
+     * @param defaultDate 기본 선택 날짜 (null이면 Anytime)
+     * @param requiredProject 필수 지정 프로젝트 (없으면 null)
+     * @param editingTodo 수정할 할 일 객체 (추가 모드이면 null)
+     * @param onDataChanged 데이터 변경 시 실행할 콜백
+     */
     private static void showDialog(
             Window owner,
             TodoManager todoManager,
@@ -55,7 +119,7 @@ public class TodoDialog {
 
         boolean isEdit = editingTodo != null;
 
-        // 할 일 추가 창 생성
+        // 할 일 추가 및 수정 창 생성
         JDialog dialog = new JDialog(
                 owner,
                 isEdit ? "할 일 수정" : "할 일 추가",
@@ -282,7 +346,7 @@ public class TodoDialog {
 
         formPanel.add(errorLabel);
 
-        // 추가 버튼
+        // 추가 및 저장 버튼
         JButton addButton = new JButton(
                 isEdit ? "저장" : "추가"
         );
@@ -303,7 +367,7 @@ public class TodoDialog {
         formPanel.add(Box.createVerticalStrut(10));
         formPanel.add(buttonPanel);
 
-        // 추가 버튼 클릭 시 할 일 등록
+        // 추가 및 저장 버튼 클릭 시 데이터 저장
         addButton.addActionListener(e -> {
 
             String content = contentField.getText().trim();

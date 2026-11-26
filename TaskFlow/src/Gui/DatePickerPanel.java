@@ -5,6 +5,15 @@ import java.awt.*;
 import java.time.LocalDate;
 import java.time.YearMonth;
 
+/**
+ * 날짜 선택 기능을 제공하는 달력 패널 클래스
+ *
+ * <p>연도와 월을 기준으로 달력을 표시하고
+ * 이전 달 및 다음 달 이동과 날짜 선택 기능 제공</p>
+ *
+ * <p>날짜 선택 시 콜백을 실행하여 외부 화면과 연동할 수 있고
+ * 날짜 선택 영역의 활성화 및 비활성화 가능</p>
+ */
 public class DatePickerPanel extends JPanel {
     // 실제 선택된 날짜
     private LocalDate selectedDate;
@@ -15,13 +24,17 @@ public class DatePickerPanel extends JPanel {
     // 날짜 선택 시 실행할 콜백
     private Runnable onDateSelected = () -> {};
 
+    /**
+     * 기본 날짜를 기준으로 날짜 선택 패널 생성
+     *
+     * <p>기본 날짜에 해당하는 달력 표시 및
+     * 월 이동 버튼과 날짜 선택 이벤트 설정</p>
+     *
+     * @param defaultDate 기본 선택 날짜 (null이면 오늘 날짜 사용)
+     */
     public DatePickerPanel(LocalDate defaultDate) {
-
-        selectedDate = defaultDate == null
-                ? LocalDate.now() : defaultDate;
-
+        selectedDate = defaultDate == null ? LocalDate.now() : defaultDate;
         currentMonth = YearMonth.from(selectedDate);
-
         setLayout(new BorderLayout(5, 5));
         setBackground(Color.WHITE);
 
@@ -62,42 +75,49 @@ public class DatePickerPanel extends JPanel {
         refreshCalendar();
     }
 
-    // 현재 선택된 날짜 반환
+    /**
+     * 현재 선택된 날짜 반환
+     *
+     * @return 현재 선택된 날짜
+     */
     public LocalDate getSelectedDate() {
         return selectedDate;
     }
 
     /**
-     * 날짜 선택 시 실행할 동작을 설정한다.
+     * 날짜 선택 시 실행할 콜백 설정
      *
-     * @param onDateSelected 날짜 선택 콜백
+     * <p>날짜 선택 이후 외부 화면의 날짜 표시,
+     * 할 일 목록 갱신 및 팝업 종료 등의 동작과 연동 가능</p>
+     *
+     * @param onDateSelected 날짜 선택 시 실행할 콜백
      */
     public void setOnDateSelected(Runnable onDateSelected) {
         this.onDateSelected = onDateSelected;
     }
 
-    // 현재 연월에 해당하는 달력 표시
+    /**
+     * 현재 표시 중인 연도와 월을 기준으로 달력 갱신
+     *
+     * <p>기존 달력 컴포넌트 제거 후
+     * 요일, 빈칸, 날짜 버튼을 순서대로 배치</p>
+     *
+     * <p>주말 및 선택된 날짜를 색상으로 구분하고
+     * 날짜 선택 시 달력 갱신 및 등록된 콜백 실행</p>
+     */
     private void refreshCalendar() {
-
         calendarPanel.removeAll();
-
         monthLabel.setText(
                 currentMonth.getYear() + "년 "
                         + currentMonth.getMonthValue() + "월"
         );
-
         // 요일 표시
         String[] days = {"일", "월", "화", "수", "목", "금", "토"};
-
         for (String day : days) {
-            calendarPanel.add(
-                    new JLabel(day, SwingConstants.CENTER)
-            );
+            calendarPanel.add(new JLabel(day, SwingConstants.CENTER));
         }
-
         // 해당 월의 첫날과 시작 요일 계산
         LocalDate firstDate = currentMonth.atDay(1);
-
         int startDay = firstDate.getDayOfWeek().getValue() % 7;
         int lastDay = currentMonth.lengthOfMonth();
 
@@ -154,14 +174,29 @@ public class DatePickerPanel extends JPanel {
         calendarPanel.repaint();
     }
 
-    // 날짜 선택 영역 활성화 및 비활성화
+    /**
+     * 날짜 선택 패널의 활성화 상태 변경
+     *
+     * <p>패널뿐만 아니라 내부 날짜 선택 버튼 및
+     * 월 이동 버튼의 활성화 상태도 함께 변경</p>
+     *
+     * @param enabled true면 활성화, false면 비활성화
+     */
     @Override
     public void setEnabled(boolean enabled) {
         super.setEnabled(enabled);
         setChildrenEnabled(this, enabled);
     }
 
-    // 내부 컴포넌트까지 활성화 상태 변경
+    /**
+     * 컨테이너 내부 컴포넌트의 활성화 상태 변경
+     *
+     * <p>내부 컴포넌트가 컨테이너인 경우
+     * 재귀 호출을 통해 하위 컴포넌트의 활성화 상태까지 변경</p>
+     *
+     * @param container 상태를 변경할 컴포넌트들을 포함하는 컨테이너
+     * @param enabled true면 활성화, false면 비활성화
+     */
     private void setChildrenEnabled(Container container,
                                     boolean enabled) {
         for (Component component : container.getComponents()) {

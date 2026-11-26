@@ -12,26 +12,39 @@ import java.time.LocalTime;
 import java.util.List;
 import java.util.Scanner;
 
+/**
+ * Todo GUI 기능의 독립 실행 및 검증을 위한 테스트 클래스
+ *
+ * <p>TodoManager와 ProjectManager를 생성하고
+ * 테스트용 프로젝트 및 할 일 데이터 등록</p>
+ *
+ * <p>TodoPanel을 독립적으로 실행하여 할 일 조회, 추가, 수정, 삭제,
+ * 완료 상태 변경, 프로젝트별 분류 및 D-Day 표시 기능 검증</p>
+ *
+ * <p>Anytime 목록 및 날짜 선택 팝업 기능 테스트 가능</p>
+ */
 public class TodoGuiTest {
+
+    /**
+     * Todo GUI 테스트 화면 실행
+     *
+     * <p>SwingUtilities.invokeLater()를 사용하여
+     * 이벤트 디스패치 스레드(EDT)에서 GUI 생성</p>
+     *
+     * <p>공유 Manager 객체 연결 및 테스트 데이터 등록 후
+     * TodoPanel을 포함하는 JFrame 생성 및 표시</p>
+     *
+     * @param args 명령행 실행 인자 (사용하지 않음)
+     */
     public static void main(String[] args) {
-
-        // Swing 화면을 안전하게 생성
         SwingUtilities.invokeLater(() -> {
-
-            // 테스트용 프로그램 창 생성
             JFrame frame = new JFrame("TaskFlow - Todo Test");
-
-            // 기존 Manager 객체 생성 및 연결
             Scanner scanner = new Scanner(System.in);
-
             TodoManager todoManager = new TodoManager(scanner);
-
-            ProjectManager projectManager =
-                    new ProjectManager(scanner, todoManager);
-
+            ProjectManager projectManager = new ProjectManager(scanner, todoManager);
             todoManager.setProjectManager(projectManager);
 
-            // 테스트용 프로젝트 생성
+            // 테스트용 프로젝트
             projectManager.addProject(new Project(
                     "JAVA 프로젝트",
                     LocalDateTime.now().plusDays(7)
