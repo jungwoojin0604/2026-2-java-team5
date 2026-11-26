@@ -188,12 +188,12 @@ public class TodoManager {
     }
 
     /**
-     * 새로운 할 일 생성 후 전체 할 일 목록에 등록하는 메드
+     * 새로운 할 일 생성 후 전체 할 일 목록에 등록하는 메서드
      *
      * <p>할 일에 nextId를 고유 id로 부여, 등록 후 nextId 1 증가</p>
      *
      * @param content 등록할 할 일 내용
-     * @param date 등록할 할 일의 날짜 (Anytime일 떄는 null)
+     * @param date 등록할 할 일의 날짜 (Anytime일 때는 null)
      * @param time 등록할 할 일의 시간 (미지정시 null로 저장)
      * @param projectTags 등록할 할 일의 태그 목록
      * @param isDone 등록할 할 일의 완료 여부 (새로 입력하면 false, 파일에서 불러오면 저장된 값)
@@ -338,7 +338,7 @@ public class TodoManager {
      * 할 일의 시간 정해져 있으면 시간 문자열로 반환
      *
      * @param todo 시간 정보 확인할 할 일
-     * @return 시간이 있는 경우 " | HH:mm 형식, 없으면 빈 문자열
+     * @return 시간이 있는 경우 " | HH:mm " 형식, 없으면 빈 문자열
      */
     private String formatTodoTime(Todo todo) {
         if (todo.getTime() == null) {
@@ -634,10 +634,12 @@ public class TodoManager {
     }
 
     /**
-     * 전달받은 할 일 객체를 목록에서 삭제한다.
+     * 전달받은 할 일 객체를 전체 할 일 목록에서 삭제
+     *
+     * <p>GUI 환경에서 지정된 Todo 객체를 직접 삭제할 때 사용</p>
      *
      * @param todo 삭제할 할 일 객체
-     * @return 삭제 성공 여부
+     * @return 삭제 성공 시 true, 실패 시 false
      */
     public boolean deleteTodo(Todo todo) {
         return todoList.remove(todo);
@@ -832,6 +834,17 @@ public class TodoManager {
         }
     }
 
+    /**
+     * 전체 할 일 데이터를 파일 저장용 문자열로 변환
+     *
+     * <p>할 일의 내용, 날짜, 시간, 프로젝트 태그 및 완료 상태를
+     * 구분 문자(|)를 사용하여 저장 형식에 맞게 구성</p>
+     *
+     * <p>날짜 및 시간 미지정 시 빈 문자열로 처리하고
+     * 여러 프로젝트 태그는 쉼표로 구분</p>
+     *
+     * @return 전체 할 일의 파일 저장용 문자열
+     */
     @Override
     public String toString() {
         String[] str = new String[todoList.size()];
