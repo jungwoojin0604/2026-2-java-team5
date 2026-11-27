@@ -92,8 +92,8 @@ public class TodoGuiTest {
             );
 
             // 두 Manager를 공유하는 TodoPanel 생성
-            TodoPanel mainPanel = new TodoPanel(todoManager, projectManager);
-            mainPanel.setPreferredSize(new Dimension(800, 750));
+            CalendarPanel mainPanel = new CalendarPanel(todoManager, projectManager);
+            mainPanel.setPreferredSize(new Dimension(1220, 750));
 
             // 창 설정
             frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
