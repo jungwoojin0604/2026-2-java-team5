@@ -1,5 +1,7 @@
 package Gui;
 
+import model.Theme;
+
 import javax.swing.*;
 import java.awt.*;
 import java.time.LocalDate;
@@ -21,6 +23,12 @@ public class DatePickerPanel extends JPanel {
     private YearMonth currentMonth;
     private JLabel monthLabel;
     private JPanel calendarPanel;
+    // 현재 적용된 테마
+    private Theme currentTheme;
+    // 상단 연월 이동 영역
+    private JPanel headerPanel;
+    private JButton prevButton;
+    private JButton nextButton;
     // 날짜 선택 시 실행할 콜백
     private Runnable onDateSelected = () -> {};
 
@@ -42,11 +50,11 @@ public class DatePickerPanel extends JPanel {
         setBackground(Color.WHITE);
 
         // 상단 연월 이동 영역
-        JPanel headerPanel = new JPanel(new BorderLayout());
+        headerPanel = new JPanel(new BorderLayout());
         headerPanel.setBackground(Color.WHITE);
 
-        JButton prevButton = new JButton("<");
-        JButton nextButton = new JButton(">");
+        prevButton = new JButton("<");
+        nextButton = new JButton(">");
         monthLabel = new JLabel("", SwingConstants.CENTER);
 
         headerPanel.add(prevButton, BorderLayout.WEST);
@@ -113,6 +121,42 @@ public class DatePickerPanel extends JPanel {
     }
 
     /**
+     * 날짜 선택 패널에 지정된 테마 적용
+     *
+     * <p>달력 배경, 연월 이동 버튼, 날짜 및 요일의 색상과
+     * 폰트 변경</p>
+     *
+     * <p>현재 테마 정보를 유지하여 날짜 선택 및 월 이동 시에도
+     * 동일한 테마 적용</p>
+     *
+     * @param theme 적용할 테마 객체
+     */
+    public void applyTheme(Theme theme) {
+        currentTheme = theme;
+        setBackground(theme.getBackgroundColor());
+        headerPanel.setBackground(theme.getBackgroundColor());
+        calendarPanel.setBackground(theme.getBackgroundColor());
+        // 연월 표시
+        monthLabel.setForeground(theme.getTextColor());
+        monthLabel.setFont(
+                theme.getFont().deriveFont(Font.BOLD)
+        );
+
+        // 이전 달 이동 버튼
+        prevButton.setBackground(theme.getButtonColor());
+        prevButton.setForeground(theme.getTextColor());
+        prevButton.setFont(theme.getFont());
+
+        // 다음 달 이동 버튼
+        nextButton.setBackground(theme.getButtonColor());
+        nextButton.setForeground(theme.getTextColor());
+        nextButton.setFont(theme.getFont());
+
+        // 달력 내부 갱신
+        refreshCalendar();
+    }
+
+    /**
      * 현재 표시 중인 연도와 월을 기준으로 달력 갱신
      *
      * <p>기존 달력 컴포넌트 제거 후
@@ -130,7 +174,14 @@ public class DatePickerPanel extends JPanel {
         // 요일 표시
         String[] days = {"일", "월", "화", "수", "목", "금", "토"};
         for (String day : days) {
-            calendarPanel.add(new JLabel(day, SwingConstants.CENTER));
+            JLabel dayLabel = new JLabel(day, SwingConstants.CENTER);
+            if (currentTheme != null) {
+                dayLabel.setForeground(currentTheme.getTextColor());
+                dayLabel.setFont(
+                        currentTheme.getFont().deriveFont(Font.BOLD)
+                );
+            }
+            calendarPanel.add(dayLabel);
         }
         // 해당 월의 첫날과 시작 요일 계산
         LocalDate firstDate = currentMonth.atDay(1);
@@ -149,9 +200,14 @@ public class DatePickerPanel extends JPanel {
 
             JButton dayButton = new JButton(String.valueOf(day));
             dayButton.setMargin(new Insets(2, 2, 2, 2));
-
-            dayButton.setBackground(Color.WHITE);
-            dayButton.setForeground(Color.BLACK);
+            if (currentTheme != null) {
+                dayButton.setBackground(currentTheme.getBackgroundColor());
+                dayButton.setForeground(currentTheme.getTextColor());
+                dayButton.setFont(currentTheme.getFont());
+            } else {
+                dayButton.setBackground(Color.WHITE);
+                dayButton.setForeground(Color.BLACK);
+            }
             dayButton.setBorderPainted(false);
             dayButton.setFocusPainted(false);
             dayButton.setContentAreaFilled(false);
@@ -166,8 +222,18 @@ public class DatePickerPanel extends JPanel {
 
             // 선택된 날짜 강조
             if (date.equals(selectedDate)) {
-                dayButton.setBackground(new Color(37, 99, 235));
-                dayButton.setForeground(Color.WHITE);
+                if (currentTheme != null) {
+                    Color accent = currentTheme.getAccentColor();
+                    dayButton.setBackground(accent);
+                    // 강조색 밝기에 따라 글자색 결정
+                    double brightness = accent.getRed() * 0.299 + accent.getGreen() * 0.587 + accent.getBlue() * 0.114;
+                    dayButton.setForeground(
+                            brightness >= 150 ? Color.BLACK : Color.WHITE
+                    );
+                } else {
+                    dayButton.setBackground(new Color(37, 99, 235));
+                    dayButton.setForeground(Color.WHITE);
+                }
                 dayButton.setOpaque(true);
             }
 
@@ -178,11 +244,13 @@ public class DatePickerPanel extends JPanel {
                 onDateSelected.run();
             });
 
-
             // 날짜 버튼과 Todo 점을 하나의 칸에 배치
             JPanel dateCell = new JPanel(new BorderLayout());
-            dateCell.setBackground(Color.WHITE);
-
+            dateCell.setBackground(
+                    currentTheme != null
+                            ? currentTheme.getBackgroundColor()
+                            : Color.WHITE
+            );
             dateCell.add(dayButton, BorderLayout.CENTER);
 
             // 해당 날짜의 Todo 개수 조회
@@ -198,7 +266,11 @@ public class DatePickerPanel extends JPanel {
             dotLabel.setFont(new Font(
                     Font.SANS_SERIF, Font.PLAIN, 8
             ));
-            dotLabel.setForeground(new Color(37, 99, 235));
+            dotLabel.setForeground(
+                    currentTheme != null
+                            ? currentTheme.getAccentColor()
+                            : new Color(37, 99, 235)
+            );
             dotLabel.setPreferredSize(new Dimension(1, 12));
 
             // 마우스를 올리면 실제 Todo 개수 확인

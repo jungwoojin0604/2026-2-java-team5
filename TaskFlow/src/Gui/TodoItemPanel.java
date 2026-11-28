@@ -2,6 +2,7 @@ package Gui;
 
 import manager.ProjectManager;
 import manager.TodoManager;
+import model.Theme;
 import model.Todo;
 
 import javax.swing.*;
@@ -34,6 +35,9 @@ public class TodoItemPanel extends JPanel {
     private final String requiredProject;
     private final boolean showDate;
     private final Runnable onDataChanged;
+
+    // 현재 적용된 테마
+    private Theme currentTheme;
 
     // 할 일 표시 컴포넌트
     private final JCheckBox doneCheckBox;
@@ -179,6 +183,42 @@ public class TodoItemPanel extends JPanel {
     }
 
     /**
+     * 개별 할 일 패널에 지정된 테마 적용
+     *
+     * <p>할 일의 배경색, 글자색, 폰트 및
+     * 완료 상태에 따른 체크박스 색상 변경</p>
+     *
+     * @param theme 적용할 테마 객체
+     */
+    public void applyTheme(Theme theme) {
+        currentTheme = theme;
+        // 할 일 영역 배경색
+        setBackground(theme.getPanelColor());
+        // 할 일 내용 폰트
+        contentLabel.setFont(
+                theme.getFont().deriveFont(Font.PLAIN, 14f)
+        );
+        // 날짜 및 시간 표시
+        dateTimeLabel.setForeground(
+                theme.getSecondaryTextColor()
+        );
+        dateTimeLabel.setFont(
+                theme.getFont().deriveFont(Font.PLAIN, 12f)
+        );
+        // 수정 및 삭제 메뉴 버튼
+        menuButton.setForeground(theme.getTextColor());
+        menuButton.setBackground(theme.getButtonColor());
+        menuButton.setFont(theme.getFont());
+        // 완료 체크박스 갱신
+        doneCheckBox.setIcon(new CircleCheckIcon(false));
+        doneCheckBox.setSelectedIcon(new CircleCheckIcon(true));
+        // 완료 상태에 따른 글자색 및 취소선 적용
+        updateDoneStyle();
+        revalidate();
+        repaint();
+    }
+
+    /**
      * 화면에 표시할 날짜, 시간 및 D-Day 문자열 생성
      *
      * <p>showDate 설정에 따라 날짜 표시 여부 결정
@@ -237,8 +277,8 @@ public class TodoItemPanel extends JPanel {
     /**
      * 할 일의 완료 상태에 따른 글자 스타일 변경
      *
-     * <p>완료 상태에서는 취소선 및 회색 글자 적용,
-     * 미완료 상태에서는 취소선 해제 및 검은색 글자 적용</p>
+     * <p>완료 상태에서는 취소선 및 테마의 보조 글자색 적용,
+     * 미완료 상태에서는 취소선 해제 및 기본 글자색 적용</p>
      */
     private void updateDoneStyle() {
         Map<TextAttribute, Object> attributes = new HashMap<>();
@@ -248,10 +288,18 @@ public class TodoItemPanel extends JPanel {
                     TextAttribute.STRIKETHROUGH,
                     TextAttribute.STRIKETHROUGH_ON
             );
-            contentLabel.setForeground(Color.GRAY);
+            contentLabel.setForeground(
+                    currentTheme != null
+                            ? currentTheme.getSecondaryTextColor()
+                            : Color.GRAY
+            );
         } else {
             attributes.put(TextAttribute.STRIKETHROUGH, false);
-            contentLabel.setForeground(Color.BLACK);
+            contentLabel.setForeground(
+                    currentTheme != null
+                            ? currentTheme.getTextColor()
+                            : Color.BLACK
+            );
         }
         contentLabel.setFont(
                 contentLabel.getFont().deriveFont(attributes)
@@ -264,7 +312,7 @@ public class TodoItemPanel extends JPanel {
      * <p>완료 상태는 흰색 체크 표시가 포함된 회색 원으로,
      * 미완료 상태는 내부가 비어 있는 원으로 표시</p>
      */
-    private static class CircleCheckIcon implements Icon {
+    private class CircleCheckIcon implements Icon {
         private final boolean selected;
 
         /**
@@ -317,11 +365,16 @@ public class TodoItemPanel extends JPanel {
             );
             g2.setStroke(new BasicStroke(1.5f));
             if (selected) {
-                // 완료 상태: 회색 원
-                g2.setColor(new Color(176, 181, 189));
+                // 완료 상태의 원 색상
+                Color circleColor = currentTheme != null ? currentTheme.getAccentColor() : new Color(176, 181, 189);
+                g2.setColor(circleColor);
                 g2.fillOval(x + 2, y + 2, 16, 16);
-                // 흰색 체크 표시
-                g2.setColor(Color.WHITE);
+
+                // 원의 색상 밝기에 따른 체크 표시 색상
+                double brightness = circleColor.getRed() * 0.299 + circleColor.getGreen() * 0.587 + circleColor.getBlue() * 0.114;
+                g2.setColor(
+                        brightness >= 150 ? Color.BLACK : Color.WHITE
+                );
                 g2.setStroke(new BasicStroke(
                         2f,
                         BasicStroke.CAP_ROUND,
@@ -329,10 +382,11 @@ public class TodoItemPanel extends JPanel {
                 ));
                 g2.drawLine(x + 6, y + 10, x + 9, y + 13);
                 g2.drawLine(x + 9, y + 13, x + 14, y + 7);
-
             } else {
                 // 미완료 상태: 빈 원
-                g2.setColor(new Color(170, 170, 170));
+                g2.setColor(
+                        currentTheme != null ? currentTheme.getSecondaryTextColor() : new Color(170, 170, 170)
+                );
                 g2.drawOval(x + 2, y + 2, 16, 16);
             }
             g2.dispose();
