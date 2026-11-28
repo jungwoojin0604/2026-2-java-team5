@@ -18,10 +18,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
-import java.io.IOException;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Path;
 
 /**
  * TaskFlow 프로그램의 메인 화면 클래스

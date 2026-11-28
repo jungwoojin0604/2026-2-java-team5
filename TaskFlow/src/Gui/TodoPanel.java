@@ -32,19 +32,33 @@ public class TodoPanel extends JPanel {
     // 기존 데이터 관리 객체 공유
     private final TodoManager todoManager;
     private final ProjectManager projectManager;
+
     // 현재 선택된 날짜
     private LocalDate currentDate = LocalDate.now();
+
     // 할 일 목록 및 날짜 표시 영역
     private JPanel todoListPanel;
     private JLabel dateLabel;
+
     // 할 일 검색 입력창
     private JTextField searchField;
+
     // Anytime 목록 조회 여부
     private boolean anytimeMode = false;
+
+    // D-Day 목록 조회 여부
+    private boolean dDayMode = false;
+
     // 프로젝트별 펼치기 상태 저장
     private final Map<String, Boolean> expandedStates = new LinkedHashMap<>();
+
     // 화면 전환 버튼
     private JToggleButton anytimeButton;
+    private JToggleButton dDayButton;
+
+    // 완료 상태별 조회 메뉴
+    private JComboBox<String> statusComboBox;
+
     // 다른 화면의 데이터 갱신을 위한 콜백
     private Runnable onDataChanged = () -> {};
 
@@ -91,7 +105,8 @@ public class TodoPanel extends JPanel {
                         SwingUtilities.getWindowAncestor(this),
                         todoManager,
                         projectManager,
-                        anytimeMode ? null : currentDate,
+                anytimeMode ? null :
+                        (dDayMode || statusComboBox.getSelectedIndex() != 0 ? LocalDate.now() : currentDate),
                         null,
                         this::notifyDataChanged
                 )
@@ -102,13 +117,55 @@ public class TodoPanel extends JPanel {
         // Anytime 목록 전환 버튼
         anytimeButton = new JToggleButton("Anytime");
         anytimeButton.addActionListener(e -> {
-            anytimeMode = anytimeButton.isSelected();
-            dateLabel.setText(
-                    anytimeMode ? "Anytime" : currentDate.toString()
-            );
+            boolean selected = anytimeButton.isSelected();
+            // 완료 상태별 조회 해제
+            statusComboBox.setSelectedIndex(0);
+            anytimeMode = selected;
+            anytimeButton.setSelected(selected);
+            // D-Day 조회 모드 해제
+            dDayMode = false;
+            dDayButton.setSelected(false);
+            dateLabel.setText(anytimeMode ? "Anytime" : currentDate.toString());
             refreshTodoList();
         });
         searchPanel.add(anytimeButton);
+
+        // D-Day 목록 전환 버튼
+        dDayButton = new JToggleButton("D-Day");
+        dDayButton.addActionListener(e -> {
+            boolean selected = dDayButton.isSelected();
+            // 완료 상태별 조회 해제
+            statusComboBox.setSelectedIndex(0);
+            dDayMode = selected;
+            dDayButton.setSelected(selected);
+            // Anytime 조회 모드 해제
+            anytimeMode = false;
+            anytimeButton.setSelected(false);
+            dateLabel.setText(dDayMode ? "D-Day" : currentDate.toString());
+            refreshTodoList();
+        });
+        searchPanel.add(dDayButton);
+
+        // 완료 상태별 조회 메뉴
+        String[] statusOptions = {"날짜별 조회", "완료 할 일 조회", "미완료 할 일 조회"};
+        statusComboBox = new JComboBox<>(statusOptions);
+        statusComboBox.addActionListener(e -> {
+            // 완료 상태별 조회 시 다른 조회 모드 해제
+            anytimeMode = false;
+            dDayMode = false;
+            anytimeButton.setSelected(false);
+            dDayButton.setSelected(false);
+            int selectedIndex = statusComboBox.getSelectedIndex();
+            if (selectedIndex == 1) {
+                dateLabel.setText("완료된 할 일");
+            } else if (selectedIndex == 2) {
+                dateLabel.setText("미완료 할 일");
+            } else {
+                dateLabel.setText(currentDate.toString());
+            }
+            refreshTodoList();
+        });
+        searchPanel.add(statusComboBox);
 
         // 검색 버튼 및 Enter 입력 이벤트
         searchButton.addActionListener(e -> refreshTodoList());
@@ -139,38 +196,53 @@ public class TodoPanel extends JPanel {
     /**
      * 현재 조회 모드 및 검색 조건에 따른 할 일 목록 갱신
      *
-     * <p>선택된 날짜 또는 Anytime 목록을 기준으로 할 일을 조회하고
-     * 검색어가 입력된 경우 해당 검색 조건에 맞는 할 일만 표시</p>
+     * <p>선택된 날짜, Anytime 또는 D-Day 목록을 기준으로 할 일 조회</p>
      *
-     * <p>조회된 할 일을 프로젝트별로 분류하여 표시하고
-     * 기존 프로젝트별 펼치기 및 접기 상태 유지</p>
+     * <p>검색어가 입력된 경우 해당 검색 조건에 맞는 할 일만 표시</p>
      *
-     * <p>조회된 할 일이 없는 경우 검색 결과 없음,
-     * Anytime 할 일 없음 또는 남은 프로젝트 목록 표시</p>
+     * <p>D-Day 목록은 날짜 오름차순으로 표시하고
+     * 날짜별 및 Anytime 목록은 프로젝트별로 분류하여 표시</p>
      */
     public void refreshTodoList() {
         todoListPanel.removeAll();
         String keyword = searchField.getText().trim();
         List<Todo> todos;
-
+        // 현재 선택된 완료 상태 조회
+        int statusIndex = statusComboBox.getSelectedIndex();
         // 현재 조회 모드에 따른 할 일 조회
-        if (keyword.isEmpty()) {
-            todos = anytimeMode
-                    ? todoManager.getAnyTimeTodo()
-                    : todoManager.getTodo(currentDate);
+        if (statusIndex == 1) {
+            todos = todoManager.getTodoByStatus(true);
+        } else if (statusIndex == 2) {
+            todos = todoManager.getTodoByStatus(false);
+        } else if (dDayMode) {
+            todos = todoManager.getDDayTodo();
+        } else if (anytimeMode) {
+            todos = todoManager.getAnyTimeTodo();
         } else {
-            todos = new ArrayList<>(todoManager.getTodoByKeyword(keyword));
-            todos.removeIf(todo ->
-                    anytimeMode
-                            ? todo.getDate() != null
-                            : !currentDate.equals(todo.getDate())
-            );
+            todos = todoManager.getTodo(currentDate);
         }
-
+        // 검색 조건 적용
+        if (!keyword.isEmpty()) {
+            todos = new ArrayList<>(todos);
+            todos.retainAll(todoManager.getTodoByKeyword(keyword));
+        }
+        // 조회 결과가 없는 경우
         if (todos.isEmpty()) {
             if (!keyword.isEmpty()) {
                 todoListPanel.add(
                         new JLabel("검색 결과가 없습니다.")
+                );
+            } else if (statusIndex == 1) {
+                todoListPanel.add(
+                        new JLabel("완료된 할 일이 없습니다.")
+                );
+            } else if (statusIndex == 2) {
+                todoListPanel.add(
+                        new JLabel("미완료 할 일이 없습니다.")
+                );
+            } else if (dDayMode) {
+                todoListPanel.add(
+                        new JLabel("예정된 미완료 할 일이 없습니다.")
                 );
             } else if (anytimeMode) {
                 todoListPanel.add(
@@ -179,10 +251,26 @@ public class TodoPanel extends JPanel {
             } else {
                 showRemainingProjects();
             }
+            // D-Day 및 완료 상태별 목록 표시
+        } else if (dDayMode || statusIndex != 0) {
+            for (Todo todo : todos) {
+                TodoItemPanel item = new TodoItemPanel(
+                        todo,
+                        todoManager,
+                        projectManager,
+                        null,
+                        true,
+                        this::notifyDataChanged
+                );
+                todoListPanel.add(item);
+            }
+            // 기존 프로젝트별 목록 표시
         } else {
             Map<String, List<Todo>> groups = groupTodos(todos);
             for (String name : groups.keySet()) {
-                JPanel groupPanel = createGroupPanel(name, groups.get(name));
+                JPanel groupPanel = createGroupPanel(
+                        name, groups.get(name)
+                );
                 todoListPanel.add(groupPanel);
             }
         }
@@ -193,15 +281,19 @@ public class TodoPanel extends JPanel {
     /**
      * 현재 선택된 날짜 변경 및 할 일 목록 갱신
      *
-     * <p>Anytime 조회 모드를 해제하고
+     * <p>Anytime, D-Day 및 완료 상태별 조회 모드를 해제하고
      * 변경된 날짜를 기준으로 할 일 목록 표시</p>
      *
      * @param date 변경할 날짜
      */
     public void setCurrentDate(LocalDate date) {
         this.currentDate = date;
+        // 조회 모드 초기화
         anytimeMode = false;
+        dDayMode = false;
         anytimeButton.setSelected(false);
+        dDayButton.setSelected(false);
+        statusComboBox.setSelectedIndex(0);
         dateLabel.setText(date.toString());
         refreshTodoList();
     }
