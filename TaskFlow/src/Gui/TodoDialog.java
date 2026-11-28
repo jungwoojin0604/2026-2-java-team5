@@ -448,6 +448,8 @@ public class TodoDialog {
 
         // 팝업 화면 설정
         dialog.setContentPane(formPanel);
+        // Enter 키 입력 시 추가 또는 저장 버튼 실행
+        dialog.getRootPane().setDefaultButton(addButton);
         dialog.pack();
         dialog.setLocationRelativeTo(owner);
         dialog.setVisible(true);
