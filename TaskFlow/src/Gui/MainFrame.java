@@ -6,6 +6,22 @@ import manager.TodoManager;
 import javax.swing.*;
 import java.awt.*;
 import java.util.Scanner;
+import model.Project;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.charset.StandardCharsets;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.util.ArrayList;
+import java.util.List;
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
 
 /**
  * TaskFlow 프로그램의 메인 화면 클래스
@@ -34,13 +50,22 @@ public class MainFrame extends JFrame {
 
         // 1. 메인 창 설정
         setTitle("TaskFlow");
-        setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        // 종료 전에 파일을 저장하기 위해 자동 종료 방지
+        setDefaultCloseOperation(JFrame.DO_NOTHING_ON_CLOSE);
         setLayout(new BorderLayout());
 
         // 2. Calendar 및 Project 화면 생성
         calendarPanel = new CalendarPanel(todoManager, projectManager);
 
-        projectPanel = new ProjectPanel(projectManager, todoManager);
+        // Project에서 데이터를 변경하면 Calendar도 갱신
+        projectPanel = new ProjectPanel(
+                projectManager,
+                todoManager,
+                calendarPanel::refreshCalendarPanel
+        );
+
+        // Calendar에서 데이터를 변경하면 Project도 갱신
+        calendarPanel.setOnDataChanged(projectPanel::refreshData);
 
         // 3. 화면 전환 영역 생성
         cardLayout = new CardLayout();
@@ -66,7 +91,8 @@ public class MainFrame extends JFrame {
         });
 
         projectButton.addActionListener(e -> {
-            projectPanel.refreshProjectList();
+            // 프로젝트 목록과 오른쪽 상세 화면 모두 갱신
+            projectPanel.refreshData();
             cardLayout.show(cardPanel, "Project");
         });
 
@@ -89,6 +115,40 @@ public class MainFrame extends JFrame {
 
         setSize(1100, 700);
         setLocationRelativeTo(null);
+
+        // 프로그램 종료 시 프로젝트와 Todo 저장
+        addWindowListener(new WindowAdapter() {
+            @Override
+            public void windowClosing(WindowEvent e) {
+
+                // 기존 Manager의 파일 저장 형식 재사용
+                String projects = projectManager.toString();
+                String todos = todoManager.toString();
+
+                // 프로젝트와 Todo 사이에 줄바꿈 추가
+                String data = projects
+                        + (projects.isEmpty() || todos.isEmpty() ? "" : "\n")
+                        + todos;
+
+                try {
+                    Files.writeString(
+                            Path.of("taskflow-gui.txt"),
+                            data,
+                            StandardCharsets.UTF_8
+                    );
+
+                    // 저장에 성공한 경우에만 종료
+                    dispose();
+
+                } catch (IOException ex) {
+                    JOptionPane.showMessageDialog(
+                            MainFrame.this,
+                            "파일 저장 실패: " + ex.getMessage()
+                    );
+                }
+            }
+        });
+
     }
 
     /**
@@ -102,8 +162,97 @@ public class MainFrame extends JFrame {
             TodoManager todoManager = new TodoManager(scanner);
             ProjectManager projectManager = new ProjectManager(scanner, todoManager);
             todoManager.setProjectManager(projectManager);
+
+        // 저장 데이터를 먼저 불러온 후 GUI 생성
+            if (!loadData(todoManager, projectManager)) {
+                return;
+            }
+
             MainFrame frame = new MainFrame(todoManager, projectManager);
             frame.setVisible(true);
         });
+    }
+
+    // 기존 TaskFlow 저장 형식으로 프로젝트와 Todo 불러오기
+    private static boolean loadData(TodoManager todoManager,
+                                    ProjectManager projectManager) {
+
+        Path file = Path.of("taskflow-gui.txt");
+
+        // 저장 파일이 없다면 새 프로그램으로 시작
+        if (Files.notExists(file)) {
+            return true;
+        }
+
+        try {
+            for (String line : Files.readAllLines(
+                    file, StandardCharsets.UTF_8)) {
+
+                line = line.replace("\uFEFF", "").trim();
+                if (line.isEmpty()) continue;
+
+                // | 기호로 저장된 데이터 구분
+                String[] info = line.split("\\|", -1);
+
+                if (info.length == 3 && info[0].equals("P")) {
+
+                    // 프로젝트 데이터 복원
+                    LocalDateTime deadline = info[2].isBlank()
+                            || info[2].equals("null")
+                            ? null : LocalDateTime.parse(info[2]);
+
+                    projectManager.addProject(
+                            new Project(info[1], deadline)
+                    );
+
+                } else if (info.length == 6 && info[0].equals("T")) {
+
+                    // 날짜와 시간 복원
+                    LocalDate date = info[2].isBlank()
+                            || info[2].equals("null")
+                            ? null : LocalDate.parse(info[2]);
+
+                    LocalTime time = info[3].isBlank()
+                            ? null : LocalTime.parse(info[3]);
+
+                    // 프로젝트 태그 복원
+                    List<String> tags = new ArrayList<>();
+
+                    for (String tag : info[4].split(",")) {
+                        if (!tag.isBlank()) {
+                            tags.add(tag.trim());
+                        }
+                    }
+
+                    // 완료 상태 복원
+                    if (!info[5].equals("true")
+                            && !info[5].equals("false")) {
+                        throw new IllegalArgumentException("완료 상태 오류");
+                    }
+
+                    todoManager.addTodo(
+                            info[1],
+                            date,
+                            time,
+                            tags,
+                            Boolean.parseBoolean(info[5])
+                    );
+
+                } else {
+                    throw new IllegalArgumentException(
+                            "저장 파일 형식이 올바르지 않습니다."
+                    );
+                }
+            }
+
+            return true;
+
+        } catch (IOException | RuntimeException e) {
+            JOptionPane.showMessageDialog(
+                    null,
+                    "데이터 불러오기 실패: " + e.getMessage()
+            );
+            return false;
+        }
     }
 }
