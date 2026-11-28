@@ -4,6 +4,9 @@ import manager.ProjectManager;
 import manager.ThemeManager;
 import manager.TodoManager;
 
+import java.util.Properties;
+import java.io.Reader;
+import java.io.Writer;
 import javax.swing.*;
 import java.awt.*;
 import java.util.Scanner;
@@ -20,6 +23,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
+import javax.swing.filechooser.FileNameExtensionFilter;
+
 
 /**
  * TaskFlow 프로그램의 메인 화면 클래스
@@ -35,11 +40,15 @@ public class MainFrame extends JFrame {
 
     // 테마 관리 객체
     private final ThemeManager themeManager;
+    // 사용자가 선택한 이미지 경로
+    private String customImagePath;
 
     // 상단 메뉴 및 화면 전환 버튼
     private final JPanel menuPanel;
     private final JToggleButton calendarButton;
     private final JToggleButton projectButton;
+    // 테마 설정 버튼
+    private final JButton themeButton;
 
     // 화면 전환 영역
     private final CardLayout cardLayout;
@@ -101,15 +110,121 @@ public class MainFrame extends JFrame {
             cardLayout.show(cardPanel, "Project");
         });
 
+
         // 6. 상단 메뉴 영역
-        menuPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
+        menuPanel = new JPanel(new BorderLayout());
         menuPanel.setBackground(Color.WHITE);
+
+        // 기존 Calendar / Project 탭 유지
+        JPanel tabs = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
+        tabs.setOpaque(false);
 
         calendarButton.setPreferredSize(new Dimension(210, 40));
         projectButton.setPreferredSize(new Dimension(210, 40));
 
-        menuPanel.add(calendarButton);
-        menuPanel.add(projectButton);
+        tabs.add(calendarButton);
+        tabs.add(projectButton);
+        menuPanel.add(tabs, BorderLayout.WEST);
+
+        // 오른쪽에 테마 설정 버튼 추가
+        themeButton = new JButton("테마 설정");
+        themeButton.setPreferredSize(new Dimension(120, 40));
+        menuPanel.add(themeButton, BorderLayout.EAST);
+
+        // 테마 선택 팝업 실행
+        themeButton.addActionListener(e -> {
+            String[] themes = {
+                    "기본",
+                    "쿠",
+                    "사용자 지정",
+                    "사용자 이미지 선택",
+                    "사용자 색상 선택"
+            };
+
+            Object selected = JOptionPane.showInputDialog(
+                    this,
+                    "적용할 테마를 선택하세요.",
+                    "테마 설정",
+                    JOptionPane.QUESTION_MESSAGE,
+                    null,
+                    themes,
+                    null
+            );
+
+
+            // 취소를 누르면 변경하지 않음
+            if (selected == null) {
+                return;
+            }
+
+            // 사용자가 직접 이미지 선택
+            if (selected.equals("사용자 이미지 선택")) {
+
+                JFileChooser chooser = new JFileChooser();
+                chooser.setDialogTitle("테마 이미지 선택");
+
+                // 이미지 파일만 표시
+                chooser.setFileFilter(
+                        new FileNameExtensionFilter(
+                                "이미지 파일 (PNG, JPG)",
+                                "png", "jpg", "jpeg"
+                        )
+                );
+
+                // 파일 선택창 열기
+                int result = chooser.showOpenDialog(this);
+
+                if (result == JFileChooser.APPROVE_OPTION) {
+
+                    // 선택한 이미지의 전체 경로
+                    String imagePath =
+                            chooser.getSelectedFile().getAbsolutePath();
+
+                    // 팀원의 이미지 표시 기능 호출
+                    boolean success = calendarPanel.setThemeImage(imagePath);
+
+                    if (!success) {
+                        JOptionPane.showMessageDialog(this, "이미지를 불러올 수 없습니다.");
+                    } else {
+                        // 이미지 선택에 성공하면 사용자 지정 테마로 등록
+                        customImagePath = imagePath;
+                        applyCustomTheme(themeManager.getCurrentTheme().getBackgroundColor());
+                    }
+                }
+
+                return;
+            }
+
+
+            // 사용자 지정 배경색 선택
+            if (selected.equals("사용자 색상 선택")) {
+
+                Color color = JColorChooser.showDialog(
+                        this,
+                        "배경색 선택",
+                        themeManager.getCurrentTheme().getBackgroundColor()
+                );
+
+                // 취소하면 아무것도 변경하지 않음
+                if (color != null) {
+                    applyCustomTheme(color);
+                }
+
+                return;
+            }
+
+            // 기존 테마 선택
+            if (themeManager.setCurrentTheme(selected.toString())) {
+                applyTheme();
+            } else {
+                JOptionPane.showMessageDialog(
+                        this, "먼저 사용자 지정 테마를 만들어주세요."
+                );
+            }
+
+
+        });
+
 
         // 7. 전체 화면 배치
         add(menuPanel, BorderLayout.NORTH);
@@ -120,7 +235,8 @@ public class MainFrame extends JFrame {
 
         setSize(1100, 700);
         setLocationRelativeTo(null);
-        themeManager.setCurrentTheme("쿠");
+        // 이전에 저장한 테마 불러오기
+        loadThemeSettings();
         applyTheme();
 
         // 프로그램 종료 시 프로젝트와 Todo 저장
@@ -143,7 +259,8 @@ public class MainFrame extends JFrame {
                             data,
                             StandardCharsets.UTF_8
                     );
-
+                    // 현재 테마 설정 저장
+                    saveThemeSettings();
                     // 저장에 성공한 경우에만 종료
                     dispose();
 
@@ -156,6 +273,65 @@ public class MainFrame extends JFrame {
             }
         });
 
+    }
+
+    // 사용자가 선택한 색상과 이미지로 새 테마를 만든다.
+    private void applyCustomTheme(Color backgroundColor) {
+
+        Theme oldTheme = themeManager.getCurrentTheme();
+
+        Theme customTheme = new Theme(
+                "사용자 지정",
+                backgroundColor,
+                backgroundColor,
+                oldTheme.getAccentColor(),
+                oldTheme.getTextColor(),
+                oldTheme.getSecondaryTextColor(),
+                oldTheme.getButtonColor(),
+                oldTheme.getFont(),
+                customImagePath != null
+                        ? customImagePath : oldTheme.getImagePath()
+        );
+
+        // 사용자 지정 테마 등록 및 적용
+        themeManager.addTheme(customTheme);
+        themeManager.setCurrentTheme("사용자 지정");
+        applyTheme();
+    }
+
+    // 현재 테마와 사용자 지정 설정을 파일에 저장
+    private void saveThemeSettings() throws IOException {
+
+        Properties settings = new Properties();
+
+        // 현재 선택한 테마 이름
+        settings.setProperty(
+                "selected",
+                themeManager.getCurrentTheme().getName()
+        );
+
+        // 사용자 지정 테마가 있다면 색상과 이미지도 저장
+        Theme custom = themeManager.getTheme("사용자 지정");
+
+        if (custom != null) {
+            settings.setProperty(
+                    "background",
+                    String.valueOf(custom.getBackgroundColor().getRGB())
+            );
+
+            settings.setProperty(
+                    "image",
+                    custom.getImagePath() == null
+                            ? "" : custom.getImagePath()
+            );
+        }
+
+        try (Writer writer = Files.newBufferedWriter(
+                Path.of("theme.properties"),
+                StandardCharsets.UTF_8)) {
+
+            settings.store(writer, "TaskFlow Theme");
+        }
     }
 
     /**
@@ -181,6 +357,10 @@ public class MainFrame extends JFrame {
         projectButton.setBackground(theme.getButtonColor());
         projectButton.setForeground(theme.getTextColor());
         projectButton.setFont(theme.getFont());
+        // 테마 설정 버튼에도 현재 테마 적용
+        themeButton.setBackground(theme.getButtonColor());
+        themeButton.setForeground(theme.getTextColor());
+        themeButton.setFont(theme.getFont());
 
         // Calendar 화면 테마 적용
         calendarPanel.applyTheme(theme);
@@ -306,4 +486,49 @@ public class MainFrame extends JFrame {
             return false;
         }
     }
+
+    // 저장된 테마 설정을 불러오는 메서드
+    private void loadThemeSettings() {
+
+        themeManager.setCurrentTheme("쿠");
+
+        Path file = Path.of("theme.properties");
+        if (Files.notExists(file)) return;
+
+        Properties settings = new Properties();
+
+        try (Reader reader = Files.newBufferedReader(
+                file, StandardCharsets.UTF_8)) {
+
+            settings.load(reader);
+
+            String background = settings.getProperty("background");
+
+            // 사용자 지정 테마 복원
+            if (background != null) {
+                customImagePath = settings.getProperty("image", "");
+
+                if (customImagePath.isEmpty()) {
+                    customImagePath = null;
+                }
+
+                Color color = new Color(
+                        Integer.parseInt(background), true
+                );
+
+                applyCustomTheme(color);
+            }
+
+            // 마지막으로 선택한 테마 적용
+            themeManager.setCurrentTheme(
+                    settings.getProperty("selected", "쿠")
+            );
+
+        } catch (IOException | IllegalArgumentException e) {
+            JOptionPane.showMessageDialog(
+                    this, "테마 불러오기 실패: " + e.getMessage()
+            );
+        }
+    }
+
 }
