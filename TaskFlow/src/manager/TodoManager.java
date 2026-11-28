@@ -394,13 +394,16 @@ public class TodoManager {
     }
 
     /**
-     * 이번주와 다음주 미완료 할 일을 D-Day 순으로 출력하는 메서드
+     * 이번 주 및 다음 주의 미완료 할 일 목록 조회
      *
-     * <p>오늘부터 다음주 일요일까지의 할 일 조회</p>
+     * <p>실제 오늘부터 다음 주 일요일까지의 미완료 할 일 조회</p>
      *
-     * <p>날짜 있고 미완료 상태인 todo만 조회해서 남은 날짜 적은 순서대로 정렬</p>
+     * <p>Anytime 할 일은 제외하고
+     * 선택 정렬을 통해 날짜 오름차순으로 정렬</p>
+     *
+     * @return 날짜 오름차순으로 정렬된 미완료 할 일 목록
      */
-    public void showDDayTodo() {
+    public List<Todo> getDDayTodo() {
         LocalDate today = LocalDate.now();
         LocalDate endDate = today.with(DayOfWeek.SUNDAY).plusWeeks(1);
         List<Todo> result = new ArrayList<>();
@@ -423,6 +426,19 @@ public class TodoManager {
             result.set(i, result.get(minIndex));
             result.set(minIndex, temp);
         }
+        return result;
+    }
+
+    /**
+     * 이번주와 다음주 미완료 할 일을 D-Day 순으로 출력하는 메서드
+     *
+     * <p>오늘부터 다음주 일요일까지의 할 일 조회</p>
+     *
+     * <p>날짜 있고 미완료 상태인 todo만 조회해서 남은 날짜 적은 순서대로 정렬</p>
+     */
+    public void showDDayTodo() {
+        LocalDate today = LocalDate.now();
+        List<Todo> result = getDDayTodo();
 
         System.out.println("---------- D-Day 목록 ----------");
 
