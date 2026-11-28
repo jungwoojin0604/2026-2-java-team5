@@ -3,6 +3,7 @@ package Gui;
 import manager.ProjectManager;
 import manager.TodoManager;
 import model.Project;
+import model.Theme;
 import model.Todo;
 
 import javax.swing.*;
@@ -118,6 +119,12 @@ public class TodoDialog {
             Runnable onDataChanged) {
 
         boolean isEdit = editingTodo != null;
+
+        Theme theme = null;
+
+        if (owner instanceof MainFrame frame) {
+            theme = frame.getThemeManager().getCurrentTheme();
+        }
 
         // 할 일 추가 및 수정 창 생성
         JDialog dialog = new JDialog(
@@ -448,10 +455,75 @@ public class TodoDialog {
 
         // 팝업 화면 설정
         dialog.setContentPane(formPanel);
-        // Enter 키 입력 시 추가 또는 저장 버튼 실행
         dialog.getRootPane().setDefaultButton(addButton);
+        // 현재 테마 적용
+        applyComponentTheme(formPanel, theme);
+        // 날짜 선택 팝업 테마 적용
+        if (theme != null) {
+            datePicker.applyTheme(theme);
+            datePopup.setBackground(theme.getBackgroundColor());
+        }
         dialog.pack();
         dialog.setLocationRelativeTo(owner);
         dialog.setVisible(true);
+    }
+
+    /**
+     * 입력 팝업의 컴포넌트에 지정된 테마 적용
+     *
+     * <p>컴포넌트 종류에 따른 배경색, 글자색 및 폰트 변경</p>
+     *
+     * <p>기존 폰트의 크기와 굵기 및 오류 메시지 색상 유지</p>
+     *
+     * @param component 테마를 적용할 컴포넌트
+     * @param theme 적용할 테마 객체
+     */
+    static void applyComponentTheme(Component component, Theme theme) {
+        // 테마가 지정되지 않은 경우 기존 디자인 유지
+        if (theme == null) {
+            return;
+        }
+        // 날짜 선택 패널은 자체 테마 적용 메서드 사용
+        if (component instanceof DatePickerPanel datePicker) {
+            datePicker.applyTheme(theme);
+            return;
+        }
+        // 기존 폰트의 크기 및 굵기 유지
+        Font oldFont = component.getFont();
+        if (oldFont != null) {
+            component.setFont(
+                    theme.getFont().deriveFont(
+                            oldFont.getStyle(),
+                            oldFont.getSize2D()
+                    )
+            );
+        }
+        // 컴포넌트 종류에 따른 색상 적용
+        if (component instanceof JCheckBox) {
+            component.setForeground(theme.getTextColor());
+        } else if (component instanceof AbstractButton) {
+            component.setBackground(theme.getButtonColor());
+            component.setForeground(theme.getTextColor());
+        } else if (component instanceof JTextField textField) {
+            textField.setBackground(theme.getPanelColor());
+            textField.setForeground(theme.getTextColor());
+            textField.setCaretColor(theme.getTextColor());
+        } else if (component instanceof JLabel) {
+            // 오류 메시지는 빨간색 유지
+            if (!Color.RED.equals(component.getForeground())) {
+                component.setForeground(theme.getTextColor());
+            }
+        } else if (component instanceof JPanel
+                || component instanceof JSpinner
+                || component instanceof JScrollPane
+                || component instanceof JViewport) {
+            component.setBackground(theme.getBackgroundColor());
+        }
+        // 하위 컴포넌트에도 테마 적용
+        if (component instanceof Container container) {
+            for (Component child : container.getComponents()) {
+                applyComponentTheme(child, theme);
+            }
+        }
     }
 }

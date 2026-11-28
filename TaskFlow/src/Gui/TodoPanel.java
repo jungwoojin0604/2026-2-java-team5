@@ -3,6 +3,7 @@ package Gui;
 import manager.ProjectManager;
 import manager.TodoManager;
 import model.Project;
+import model.Theme;
 import model.Todo;
 
 import javax.swing.*;
@@ -32,6 +33,9 @@ public class TodoPanel extends JPanel {
     // 기존 데이터 관리 객체 공유
     private final TodoManager todoManager;
     private final ProjectManager projectManager;
+
+    // 현재 적용된 테마
+    private Theme currentTheme;
 
     // 현재 선택된 날짜
     private LocalDate currentDate = LocalDate.now();
@@ -194,6 +198,76 @@ public class TodoPanel extends JPanel {
     }
 
     /**
+     * 할 일 관리 화면에 지정된 테마 적용
+     *
+     * <p>현재 테마 정보 저장 및 할 일 목록 갱신</p>
+     *
+     * @param theme 적용할 테마 객체
+     */
+    public void applyTheme(Theme theme) {
+        currentTheme = theme;
+
+        applyComponentTheme(this);
+        refreshTodoList();
+    }
+
+    /**
+     * 컴포넌트 및 하위 컴포넌트에 테마 적용
+     *
+     * <p>컴포넌트의 종류에 따른 배경색, 글자색 및 폰트 변경</p>
+     *
+     * @param component 테마를 적용할 컴포넌트
+     */
+    private void applyComponentTheme(Component component) {
+        if (currentTheme == null) {
+            return;
+        }
+        // 개별 Todo 항목에 테마 적용
+        if (component instanceof TodoItemPanel item) {
+            item.applyTheme(currentTheme);
+            return;
+        }
+        // 기존 폰트의 크기와 굵기 유지
+        Font oldFont = component.getFont();
+        if (oldFont != null) {
+            component.setFont(
+                    currentTheme.getFont().deriveFont(
+                            oldFont.getStyle(),
+                            oldFont.getSize2D()
+                    )
+            );
+        }
+        // 컴포넌트 종류에 따른 색상 적용
+        if (component instanceof AbstractButton) {
+            component.setBackground(currentTheme.getButtonColor());
+            component.setForeground(currentTheme.getTextColor());
+        } else if (component instanceof JComboBox<?>) {
+            component.setBackground(currentTheme.getButtonColor());
+            component.setForeground(currentTheme.getTextColor());
+        } else if (component instanceof JTextField) {
+            component.setBackground(currentTheme.getPanelColor());
+            component.setForeground(currentTheme.getTextColor());
+        } else if (component instanceof JLabel label) {
+            if (Boolean.TRUE.equals(
+                    label.getClientProperty("secondaryText"))) {
+                label.setForeground(currentTheme.getSecondaryTextColor());
+            } else {
+                label.setForeground(currentTheme.getTextColor());
+            }
+        } else if (component instanceof JPanel
+                || component instanceof JScrollPane
+                || component instanceof JViewport) {
+            component.setBackground(currentTheme.getPanelColor());
+        }
+        // 하위 컴포넌트에도 동일한 테마 적용
+        if (component instanceof Container container) {
+            for (Component child : container.getComponents()) {
+                applyComponentTheme(child);
+            }
+        }
+    }
+
+    /**
      * 현재 조회 모드 및 검색 조건에 따른 할 일 목록 갱신
      *
      * <p>선택된 날짜, Anytime 또는 D-Day 목록을 기준으로 할 일 조회</p>
@@ -274,6 +348,7 @@ public class TodoPanel extends JPanel {
                 todoListPanel.add(groupPanel);
             }
         }
+        applyComponentTheme(todoListPanel);
         todoListPanel.revalidate();
         todoListPanel.repaint();
     }
@@ -390,6 +465,7 @@ public class TodoPanel extends JPanel {
         if (!name.isEmpty()) {
             JLabel dDayLabel = new JLabel(getProjectDDay(name));
             dDayLabel.setForeground(Color.GRAY);
+            dDayLabel.putClientProperty("secondaryText", true);
             headerPanel.add(dDayLabel);
         }
 
@@ -510,6 +586,7 @@ public class TodoPanel extends JPanel {
             JLabel nameLabel = new JLabel(project.getName());
             JLabel dDayLabel = new JLabel(getProjectDDay(project.getName()));
             dDayLabel.setForeground(Color.GRAY);
+            dDayLabel.putClientProperty("secondaryText", true);
 
             projectPanel.add(nameLabel);
             projectPanel.add(dDayLabel);

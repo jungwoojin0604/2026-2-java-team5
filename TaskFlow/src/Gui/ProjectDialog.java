@@ -2,6 +2,7 @@ package Gui;
 
 import manager.ProjectManager;
 import model.Project;
+import model.Theme;
 
 import javax.swing.*;
 import java.awt.*;
@@ -27,6 +28,14 @@ public class ProjectDialog {
     private static void showDialog(Component parent, ProjectManager pm,
                                    Project editing, Runnable onSaved) {
         boolean isEdit = editing != null;
+        // MainFrame에서 현재 테마 정보 가져오기
+        Theme theme = null;
+        Window owner = parent instanceof Window window
+                ? window
+                : SwingUtilities.getWindowAncestor(parent);
+        if (owner instanceof MainFrame frame) {
+            theme = frame.getThemeManager().getCurrentTheme();
+        }
         LocalDateTime oldDeadline = isEdit ? editing.getDeadLine() : null;
         LocalDate initialDate = oldDeadline == null ? LocalDate.now() : oldDeadline.toLocalDate();
         LocalTime initialTime = oldDeadline == null ? LocalTime.of(23, 59) : oldDeadline.toLocalTime();
@@ -65,12 +74,37 @@ public class ProjectDialog {
         form.add(new JLabel("시간"));
         form.add(timePanel);
 
+        // 입력 영역 및 날짜 선택 팝업 테마 적용
+        if (theme != null) {
+            TodoDialog.applyComponentTheme(form, theme);
+            datePicker.applyTheme(theme);
+            datePopup.setBackground(theme.getBackgroundColor());
+        }
+
         // 취소할 때까지, 또는 유효한 값을 입력할 때까지 반복
         while (true) {
-            int result = JOptionPane.showConfirmDialog(parent, form,
-                    isEdit ? "마감일 수정" : "프로젝트 추가", JOptionPane.OK_CANCEL_OPTION);
-            if (result != JOptionPane.OK_OPTION) return;
+            JOptionPane optionPane = new JOptionPane(
+                    form,
+                    JOptionPane.QUESTION_MESSAGE,
+                    JOptionPane.OK_CANCEL_OPTION
+            );
+            JDialog dialog = optionPane.createDialog(parent, isEdit ? "마감일 수정" : "프로젝트 추가");
 
+            // 팝업 전체 테마 적용
+            if (theme != null) {
+                optionPane.setBackground(theme.getBackgroundColor());
+                TodoDialog.applyComponentTheme(
+                        dialog.getContentPane(), theme
+                );
+                dialog.pack();
+                dialog.setLocationRelativeTo(parent);
+            }
+            dialog.setVisible(true);
+            Object result = optionPane.getValue();
+            dialog.dispose();
+            if (!Integer.valueOf(JOptionPane.OK_OPTION).equals(result)) {
+                return;
+            }
             String name = nameField.getText().trim();
             if (name.isEmpty() || name.contains("|") || name.contains(",") ||
                     (!isEdit && pm.findProject(name) != null)) {

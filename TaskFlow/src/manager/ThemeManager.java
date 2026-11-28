@@ -43,6 +43,21 @@ public class ThemeManager {
                 null
         );
         addTheme(defaultTheme);
+
+        // 쿠 테마
+        Theme kuTheme = new Theme(
+                "쿠",
+                new Color(255, 251, 243),
+                new Color(255, 245, 223),
+                new Color(248, 199, 108),
+                new Color(104, 84, 58),
+                new Color(133, 116, 93),
+                new Color(221, 234, 241),
+                new Font(Font.DIALOG, Font.PLAIN, 14),
+                "TaskFlow/res/themes/ku.png"
+        );
+
+        addTheme(kuTheme);
     }
 
     /**

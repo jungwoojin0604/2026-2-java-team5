@@ -2,6 +2,7 @@ package Gui;
 
 import manager.ProjectManager;
 import manager.TodoManager;
+import model.Theme;
 
 import javax.swing.*;
 import java.awt.*;
@@ -17,6 +18,7 @@ public class CalendarPanel extends JPanel {
     private final DatePickerPanel datePicker;
     private final TodoPanel todoPanel;
     private final ThemeImagePanel themeImagePanel;
+    private final JPanel leftPanel;
 
     /**
      * Calendar 화면 생성 및 날짜 선택 이벤트 연동
@@ -48,7 +50,7 @@ public class CalendarPanel extends JPanel {
         themeImagePanel = new ThemeImagePanel();
 
         // 왼쪽 영역 생성
-        JPanel leftPanel = new JPanel(new BorderLayout(0, 10));
+        leftPanel = new JPanel(new BorderLayout(0, 10));
         leftPanel.setBackground(Color.WHITE);
         leftPanel.setPreferredSize(new Dimension(420, 750));
 
@@ -92,5 +94,37 @@ public class CalendarPanel extends JPanel {
      */
     public boolean setThemeImage(String imagePath) {
         return themeImagePanel.setImage(imagePath);
+    }
+
+    /**
+     * Calendar 화면에 지정된 테마 적용
+     *
+     * <p>Calendar 전체 배경과 왼쪽 영역의 배경색 변경 및
+     * 달력 하단 테마 이미지 표시</p>
+     *
+     * @param theme 적용할 테마 객체
+     */
+    public void applyTheme(Theme theme) {
+        // Calendar 전체 배경색
+        setBackground(theme.getBackgroundColor());
+
+        // 왼쪽 영역 배경색
+        leftPanel.setBackground(theme.getBackgroundColor());
+
+        // 달력 테마 적용
+        datePicker.applyTheme(theme);
+
+        // 할 일 목록 테마 적용
+        todoPanel.applyTheme(theme);
+
+        // 이미지 영역 배경색
+        themeImagePanel.setBackground(theme.getBackgroundColor());
+
+        // 테마 이미지 설정
+        if (!setThemeImage(theme.getImagePath())) {
+            setThemeImage(null);
+        }
+        revalidate();
+        repaint();
     }
 }

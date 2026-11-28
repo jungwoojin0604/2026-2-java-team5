@@ -1,12 +1,14 @@
 package Gui;
 
 import manager.ProjectManager;
+import manager.ThemeManager;
 import manager.TodoManager;
 
 import javax.swing.*;
 import java.awt.*;
 import java.util.Scanner;
 import model.Project;
+import model.Theme;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -28,9 +30,16 @@ import java.awt.event.WindowEvent;
  * <p>두 화면에서 동일한 TodoManager와 ProjectManager 객체 공유</p>
  */
 public class MainFrame extends JFrame {
-
     private final CalendarPanel calendarPanel;
     private final ProjectPanel projectPanel;
+
+    // 테마 관리 객체
+    private final ThemeManager themeManager;
+
+    // 상단 메뉴 및 화면 전환 버튼
+    private final JPanel menuPanel;
+    private final JToggleButton calendarButton;
+    private final JToggleButton projectButton;
 
     // 화면 전환 영역
     private final CardLayout cardLayout;
@@ -43,7 +52,7 @@ public class MainFrame extends JFrame {
      * @param projectManager 프로젝트 관리 객체
      */
     public MainFrame(TodoManager todoManager, ProjectManager projectManager) {
-
+        themeManager = new ThemeManager();
         // 1. 메인 창 설정
         setTitle("TaskFlow");
         // 종료 전에 파일을 저장하기 위해 자동 종료 방지
@@ -71,8 +80,8 @@ public class MainFrame extends JFrame {
         cardPanel.add(projectPanel, "Project");
 
         // 4. 화면 전환 버튼
-        JToggleButton calendarButton = new JToggleButton("Calendar");
-        JToggleButton projectButton = new JToggleButton("Project");
+        calendarButton = new JToggleButton("Calendar");
+        projectButton = new JToggleButton("Project");
 
         ButtonGroup buttonGroup = new ButtonGroup();
         buttonGroup.add(calendarButton);
@@ -93,7 +102,7 @@ public class MainFrame extends JFrame {
         });
 
         // 6. 상단 메뉴 영역
-        JPanel menuPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
+        menuPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
         menuPanel.setBackground(Color.WHITE);
 
         calendarButton.setPreferredSize(new Dimension(210, 40));
@@ -111,6 +120,8 @@ public class MainFrame extends JFrame {
 
         setSize(1100, 700);
         setLocationRelativeTo(null);
+        themeManager.setCurrentTheme("쿠");
+        applyTheme();
 
         // 프로그램 종료 시 프로젝트와 Todo 저장
         addWindowListener(new WindowAdapter() {
@@ -145,6 +156,50 @@ public class MainFrame extends JFrame {
             }
         });
 
+    }
+
+    /**
+     * 현재 선택된 테마를 메인 화면에 적용
+     *
+     * <p>전체 배경 및 상단 메뉴 영역의 색상,
+     * 화면 전환 버튼의 색상과 폰트 변경</p>
+     */
+    public void applyTheme() {
+        Theme theme = themeManager.getCurrentTheme();
+
+        // 전체 배경색
+        getContentPane().setBackground(theme.getBackgroundColor());
+        cardPanel.setBackground(theme.getBackgroundColor());
+
+        // 상단 메뉴 영역
+        menuPanel.setBackground(theme.getBackgroundColor());
+
+        // 화면 전환 버튼
+        calendarButton.setBackground(theme.getButtonColor());
+        calendarButton.setForeground(theme.getTextColor());
+        calendarButton.setFont(theme.getFont());
+        projectButton.setBackground(theme.getButtonColor());
+        projectButton.setForeground(theme.getTextColor());
+        projectButton.setFont(theme.getFont());
+
+        // Calendar 화면 테마 적용
+        calendarPanel.applyTheme(theme);
+
+        // Project 화면 테마 적용
+        projectPanel.applyTheme(theme);
+
+        // 화면 갱신
+        revalidate();
+        repaint();
+    }
+
+    /**
+     * 프로그램의 테마 관리 객체 반환
+     *
+     * @return 테마 관리 객체
+     */
+    public ThemeManager getThemeManager() {
+        return themeManager;
     }
 
     /**

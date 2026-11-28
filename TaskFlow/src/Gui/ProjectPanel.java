@@ -3,6 +3,7 @@ package Gui;
 import manager.ProjectManager;
 import manager.TodoManager;
 import model.Project;
+import model.Theme;
 import model.Todo;
 
 import javax.swing.*;
@@ -15,6 +16,7 @@ public class ProjectPanel extends JPanel {
     private final ProjectManager projectManager;
     private final TodoManager todoManager;
     private final Runnable onDataChanged;
+    private Theme currentTheme;
     private final JPanel projectList = new JPanel();
     private final JPanel detailPanel = new JPanel(new BorderLayout());
     private Project selectedProject;
@@ -75,6 +77,76 @@ public class ProjectPanel extends JPanel {
         refreshData();
     }
 
+    /**
+     * Project 화면에 지정된 테마 적용
+     *
+     * <p>현재 테마 정보 저장 및 프로젝트 목록과
+     * 상세 화면의 색상과 폰트 변경</p>
+     *
+     * @param theme 적용할 테마 객체
+     */
+    public void applyTheme(Theme theme) {
+        currentTheme = theme;
+        applyComponentTheme(this);
+        refreshData();
+        revalidate();
+        repaint();
+    }
+
+    /**
+     * 컴포넌트 및 하위 컴포넌트에 테마 적용
+     *
+     * <p>컴포넌트 종류에 따른 배경색, 글자색 및 폰트 변경</p>
+     *
+     * @param component 테마를 적용할 컴포넌트
+     */
+    private void applyComponentTheme(Component component) {
+        if (currentTheme == null) {
+            return;
+        }
+        // 공통 Todo 항목에 테마 적용
+        if (component instanceof TodoItemPanel item) {
+            item.applyTheme(currentTheme);
+            return;
+        }
+        // 개별 프로젝트 항목에 테마 적용
+        if (component instanceof ProjectItemPanel item) {
+            item.applyTheme(currentTheme);
+            return;
+        }
+        // 기존 폰트의 크기와 굵기 유지
+        Font oldFont = component.getFont();
+        if (oldFont != null) {
+            component.setFont(
+                    currentTheme.getFont().deriveFont(
+                            oldFont.getStyle(),
+                            oldFont.getSize2D()
+                    )
+            );
+        }
+        // 컴포넌트 종류에 따른 색상 적용
+        if (component instanceof AbstractButton) {
+            component.setBackground(currentTheme.getButtonColor());
+            component.setForeground(currentTheme.getTextColor());
+        } else if (component instanceof JTextField textField) {
+            textField.setBackground(currentTheme.getPanelColor());
+            textField.setForeground(currentTheme.getTextColor());
+            textField.setCaretColor(currentTheme.getTextColor());
+        } else if (component instanceof JLabel) {
+            component.setForeground(currentTheme.getTextColor());
+        } else if (component instanceof JPanel
+                || component instanceof JScrollPane
+                || component instanceof JViewport) {
+            component.setBackground(currentTheme.getPanelColor());
+        }
+        // 하위 컴포넌트에도 테마 적용
+        if (component instanceof Container container) {
+            for (Component child : container.getComponents()) {
+                applyComponentTheme(child);
+            }
+        }
+    }
+
     // Manager에서 최신 데이터를 가져와 두 화면을 다시 그린다.
     public void refreshData() {
         if (selectedProject == null ||
@@ -90,7 +162,7 @@ public class ProjectPanel extends JPanel {
     public void refreshProjectList() {
         projectList.removeAll();
 
-// 검색어를 소문자로 통일해 비교
+        // 검색어를 소문자로 통일해 비교
         String keyword = projectSearchField.getText().trim().toLowerCase();
 
         for (Project project : projectManager.getAllProjects()) {
@@ -116,6 +188,7 @@ public class ProjectPanel extends JPanel {
                     () -> editDeadline(project),
                     () -> deleteProject(project)));
         }
+        applyComponentTheme(projectList);
         projectList.revalidate();
         projectList.repaint();
     }
@@ -232,6 +305,7 @@ public class ProjectPanel extends JPanel {
 
             detailPanel.add(new JScrollPane(todoList), BorderLayout.CENTER);
         }
+        applyComponentTheme(detailPanel);
         detailPanel.revalidate();
         detailPanel.repaint();
     }
