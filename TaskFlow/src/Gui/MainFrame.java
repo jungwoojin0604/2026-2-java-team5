@@ -60,13 +60,15 @@ public class MainFrame extends JFrame {
         calendarButton.setSelected(true);
 
         // 5. 화면 전환 이벤트
-        calendarButton.addActionListener(e ->
-                cardLayout.show(cardPanel, "Calendar")
-        );
+        calendarButton.addActionListener(e -> {
+            calendarPanel.refreshCalendarPanel();
+            cardLayout.show(cardPanel, "Calendar");
+        });
 
-        projectButton.addActionListener(e ->
-                cardLayout.show(cardPanel, "Project")
-        );
+        projectButton.addActionListener(e -> {
+            projectPanel.refreshProjectList();
+            cardLayout.show(cardPanel, "Project");
+        });
 
         // 6. 상단 메뉴 영역
         JPanel menuPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));

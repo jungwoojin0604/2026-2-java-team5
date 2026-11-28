@@ -43,4 +43,14 @@ public class CalendarPanel extends JPanel {
         add(datePicker, BorderLayout.WEST);
         add(todoPanel, BorderLayout.CENTER);
     }
+
+    /**
+     * Calendar 화면의 할 일 목록 갱신
+     *
+     * <p>현재 선택된 날짜 및 조회 조건을 유지하고
+     * 변경된 할 일과 프로젝트 정보를 화면에 반영</p>
+     */
+    public void refreshCalendarPanel() {
+        todoPanel.refreshTodoList();
+    }
 }
