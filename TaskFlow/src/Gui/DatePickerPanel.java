@@ -4,7 +4,7 @@ import javax.swing.*;
 import java.awt.*;
 import java.time.LocalDate;
 import java.time.YearMonth;
-
+import java.util.function.Function;
 /**
  * 날짜 선택 기능을 제공하는 달력 패널 클래스
  *
@@ -23,6 +23,9 @@ public class DatePickerPanel extends JPanel {
     private JPanel calendarPanel;
     // 날짜 선택 시 실행할 콜백
     private Runnable onDateSelected = () -> {};
+
+    // 날짜별 Todo 개수를 제공하는 함수
+    private Function<LocalDate, Integer> todoCountProvider = date -> 0;
 
     /**
      * 기본 날짜를 기준으로 날짜 선택 패널 생성
@@ -82,6 +85,19 @@ public class DatePickerPanel extends JPanel {
      */
     public LocalDate getSelectedDate() {
         return selectedDate;
+    }
+
+    // 날짜별 Todo 개수를 가져올 함수를 등록
+    public void setTodoCountProvider(
+            Function<LocalDate, Integer> provider) {
+
+        todoCountProvider = provider;
+        refreshCalendar();
+    }
+
+    // Todo 추가·삭제·수정 후 달력의 점 표시 갱신
+    public void refreshTodoDots() {
+        refreshCalendar();
     }
 
     /**
@@ -162,7 +178,37 @@ public class DatePickerPanel extends JPanel {
                 onDateSelected.run();
             });
 
-            calendarPanel.add(dayButton);
+
+            // 날짜 버튼과 Todo 점을 하나의 칸에 배치
+            JPanel dateCell = new JPanel(new BorderLayout());
+            dateCell.setBackground(Color.WHITE);
+
+            dateCell.add(dayButton, BorderLayout.CENTER);
+
+            // 해당 날짜의 Todo 개수 조회
+            int count = Math.max(0, todoCountProvider.apply(date));
+
+            // 칸이 좁아지는 것을 방지하기 위해 최대 5개까지 표시
+            String dots = "●".repeat(Math.min(count, 5));
+
+            JLabel dotLabel = new JLabel(
+                    dots, SwingConstants.CENTER
+            );
+
+            dotLabel.setFont(new Font(
+                    Font.SANS_SERIF, Font.PLAIN, 8
+            ));
+            dotLabel.setForeground(new Color(37, 99, 235));
+            dotLabel.setPreferredSize(new Dimension(1, 12));
+
+            // 마우스를 올리면 실제 Todo 개수 확인
+            if (count > 0) {
+                dotLabel.setToolTipText("할 일 " + count + "개");
+            }
+
+            dateCell.add(dotLabel, BorderLayout.SOUTH);
+            calendarPanel.add(dateCell);
+
         }
 
         // 남은 달력 칸 채우기

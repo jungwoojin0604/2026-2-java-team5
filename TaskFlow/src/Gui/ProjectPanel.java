@@ -18,6 +18,10 @@ public class ProjectPanel extends JPanel {
     private final JPanel projectList = new JPanel();
     private final JPanel detailPanel = new JPanel(new BorderLayout());
     private Project selectedProject;
+    // 프로젝트 이름 검색 입력창
+    private final JTextField projectSearchField = new JTextField(12);
+    // 오른쪽 Todo 목록 검색 입력창
+    private final JTextField todoSearchField = new JTextField(12);
 
     // 테스트할 때는 Manager 두 개만 전달하면 된다.
     public ProjectPanel(ProjectManager pm, TodoManager tm) {
@@ -35,13 +39,34 @@ public class ProjectPanel extends JPanel {
         left.setPreferredSize(new Dimension(420, 750));
         left.setBorder(BorderFactory.createLineBorder(Color.LIGHT_GRAY));
 
+
+        // 프로젝트 추가 및 검색 영역
         JPanel header = new JPanel(new BorderLayout());
         header.add(new JLabel("  Project"), BorderLayout.WEST);
+
         JButton addButton = new JButton("+");
-        header.add(addButton, BorderLayout.EAST);
+        JButton searchButton = new JButton("검색");
+
+        JPanel tools = new JPanel(
+                new FlowLayout(FlowLayout.RIGHT, 5, 2)
+        );
+
+        tools.add(addButton);
+        tools.add(projectSearchField);
+        tools.add(searchButton);
+
+        header.add(tools, BorderLayout.EAST);
         left.add(header, BorderLayout.NORTH);
+
+        // 프로젝트 추가
         addButton.addActionListener(e ->
-                ProjectDialog.showAddDialog(this, projectManager, this::dataChanged));
+                ProjectDialog.showAddDialog(
+                        this, projectManager, this::dataChanged));
+
+        // 검색 버튼 또는 Enter 입력 시 목록 갱신
+        searchButton.addActionListener(e -> refreshProjectList());
+        projectSearchField.addActionListener(e -> refreshProjectList());
+
 
         projectList.setLayout(new BoxLayout(projectList, BoxLayout.Y_AXIS));
         left.add(new JScrollPane(projectList), BorderLayout.CENTER);
@@ -64,7 +89,16 @@ public class ProjectPanel extends JPanel {
     // 프로젝트마다 Todo 완료 비율을 계산하고 왼쪽에 표시한다.
     public void refreshProjectList() {
         projectList.removeAll();
+
+// 검색어를 소문자로 통일해 비교
+        String keyword = projectSearchField.getText().trim().toLowerCase();
+
         for (Project project : projectManager.getAllProjects()) {
+
+            // 검색어가 포함된 프로젝트만 표시
+            if (!project.getName().toLowerCase().contains(keyword)) {
+                continue;
+            }
             List<Todo> todos = todoManager.getAllTodoByTag(project.getName());
             int completed = 0;
             for (Todo todo : todos) if (todo.isDone()) completed++;
@@ -72,7 +106,12 @@ public class ProjectPanel extends JPanel {
 
             projectList.add(new ProjectItemPanel(
                     project, progress, project == selectedProject,
-                    () -> { selectedProject = project; refreshData(); },
+                    // 다른 프로젝트 선택 시 Todo 검색 초기화
+                    () -> {
+                        selectedProject = project;
+                        todoSearchField.setText("");
+                        refreshData();
+                    },
                     () -> renameProject(project),
                     () -> editDeadline(project),
                     () -> deleteProject(project)));
@@ -87,45 +126,130 @@ public class ProjectPanel extends JPanel {
         if (selectedProject == null) {
             detailPanel.add(new JLabel("  프로젝트를 추가해주세요."), BorderLayout.NORTH);
         } else {
+
             Project project = selectedProject;
+
+            // 선택한 프로젝트에 연결된 전체 Todo 조회
+            List<Todo> allTodos =
+                    projectManager.getProjectTodos(project.getName());
+
+            // 완료된 Todo 개수 계산
+            int completed = 0;
+
+            for (Todo todo : allTodos) {
+                if (todo.isDone()) {
+                    completed++;
+                }
+            }
+
+            // 전체 Todo가 0개이면 진행률은 0%
+            int total = allTodos.size();
+            int progress = total == 0
+                    ? 0 : completed * 100 / total;
+
+            // 오른쪽 상단 영역
             JPanel top = new JPanel(new BorderLayout());
-            top.add(new JLabel("  " + project.getName()), BorderLayout.CENTER);
-            JButton addTodoButton = new JButton("+ Todo");
-            top.add(addTodoButton, BorderLayout.EAST);
+
+            // 프로젝트 이름과 진행률을 세로로 표시
+            JPanel titlePanel = new JPanel(new GridLayout(2, 1));
+
+            JLabel nameLabel =
+                    new JLabel("  " + project.getName());
+
+            nameLabel.setFont(
+                    nameLabel.getFont().deriveFont(Font.BOLD, 18f)
+            );
+
+            JLabel progressLabel = new JLabel(
+                    "  진행률 " + progress + "% ("
+                            + completed + "/" + total + " 완료)"
+            );
+
+            titlePanel.add(nameLabel);
+            titlePanel.add(progressLabel);
+
+            top.add(titlePanel, BorderLayout.CENTER);
+
+
+            JButton addTodoButton = new JButton("+");
+            JButton searchButton = new JButton("검색");
+
+            JPanel tools = new JPanel(
+                    new FlowLayout(FlowLayout.RIGHT, 5, 2)
+            );
+
+            tools.add(addTodoButton);
+            tools.add(todoSearchField);
+            tools.add(searchButton);
+
+            top.add(tools, BorderLayout.EAST);
+
+            // Todo 추가
             addTodoButton.addActionListener(e -> addTodo(project));
+
+            // 검색 버튼 또는 Enter 입력 시 상세 목록 갱신
+            searchButton.addActionListener(e -> showDetails());
+            todoSearchField.addActionListener(e -> showDetails());
+
             detailPanel.add(top, BorderLayout.NORTH);
+
 
             JPanel todoList = new JPanel();
             todoList.setLayout(new BoxLayout(todoList, BoxLayout.Y_AXIS));
-            for (Todo todo : projectManager.getProjectTodos(project.getName())) {
-                String date = todo.getDate() == null ? "Anytime" : todo.getDate().toString();
-                JCheckBox box = new JCheckBox(todo.getContent() + "   " + date, todo.isDone());
-                box.setAlignmentX(Component.LEFT_ALIGNMENT);
-                box.addActionListener(e -> {
-                    todo.setDone(box.isSelected());
-                    dataChanged();
-                });
-                todoList.add(box);
+
+
+            // 검색어를 소문자로 바꿔 대소문자 구분 없이 검색
+            String keyword = todoSearchField.getText()
+                    .trim().toLowerCase();
+
+            int count = 0;
+
+            for (Todo todo : allTodos) {
+
+                // 검색어가 포함되지 않은 Todo는 건너뛰기
+                if (!todo.getContent().toLowerCase().contains(keyword)) {
+                    continue;
+                }
+
+                TodoItemPanel item = new TodoItemPanel(
+                        todo,
+                        todoManager,
+                        projectManager,
+                        project.getName(),
+                        true,
+                        this::dataChanged
+                );
+
+                todoList.add(item);
+                count++;
             }
+
+            // 검색 결과가 없을 경우 안내 문구 표시
+            if (count == 0) {
+                todoList.add(new JLabel("검색 결과가 없습니다."));
+            }
+
+
             detailPanel.add(new JScrollPane(todoList), BorderLayout.CENTER);
         }
         detailPanel.revalidate();
         detailPanel.repaint();
     }
 
-    // 팀원 TodoDialog 연결 전에는 내용만 입력하는 임시 추가 기능을 사용한다.
+
+    // 선택한 프로젝트에 Todo를 추가하는 공통 입력창 실행
     private void addTodo(Project project) {
-        String content = JOptionPane.showInputDialog(this, "할 일 내용");
-        if (content == null) return;
-        content = content.trim();
-        if (content.isEmpty() || content.contains("|")) {
-            JOptionPane.showMessageDialog(this, "내용을 확인해주세요. (| 사용 불가)");
-            return;
-        }
-        todoManager.addTodo(content, LocalDate.now(), null,
-                List.of(project.getName()), false);
-        dataChanged();
+
+        TodoDialog.showAddDialog(
+                SwingUtilities.getWindowAncestor(this),
+                todoManager,
+                projectManager,
+                LocalDate.now(),
+                project.getName(),
+                this::dataChanged
+        );
     }
+
 
     // 프로젝트 이름을 변경하고 연결된 Todo 태그도 Manager에서 함께 변경한다.
     private void renameProject(Project project) {
