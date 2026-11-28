@@ -16,6 +16,7 @@ import java.time.LocalDate;
 public class CalendarPanel extends JPanel {
     private final DatePickerPanel datePicker;
     private final TodoPanel todoPanel;
+    private final ThemeImagePanel themeImagePanel;
 
     /**
      * Calendar 화면 생성 및 날짜 선택 이벤트 연동
@@ -33,7 +34,7 @@ public class CalendarPanel extends JPanel {
         datePicker.setTodoCountProvider(
                 date -> todoManager.getTodo(date).size()
         );
-        datePicker.setPreferredSize(new Dimension(420, 750));
+        datePicker.setPreferredSize(new Dimension(420, 350));
 
         // 오른쪽 할 일 목록 영역
         todoPanel = new TodoPanel(todoManager, projectManager);
@@ -43,8 +44,20 @@ public class CalendarPanel extends JPanel {
             todoPanel.setCurrentDate(datePicker.getSelectedDate());
         });
 
-        // 컴포넌트 배치
-        add(datePicker, BorderLayout.WEST);
+        // 테마 이미지 영역 생성
+        themeImagePanel = new ThemeImagePanel();
+
+        // 왼쪽 영역 생성
+        JPanel leftPanel = new JPanel(new BorderLayout(0, 10));
+        leftPanel.setBackground(Color.WHITE);
+        leftPanel.setPreferredSize(new Dimension(420, 750));
+
+        // 왼쪽 상단 달력 및 하단 이미지 배치
+        leftPanel.add(datePicker, BorderLayout.NORTH);
+        leftPanel.add(themeImagePanel, BorderLayout.CENTER);
+
+        // 전체 컴포넌트 배치
+        add(leftPanel, BorderLayout.WEST);
         add(todoPanel, BorderLayout.CENTER);
     }
 
@@ -71,4 +84,13 @@ public class CalendarPanel extends JPanel {
         });
     }
 
+    /**
+     * 달력 하단의 테마 이미지 변경
+     *
+     * @param imagePath 표시할 이미지 파일 경로
+     * @return 이미지 설정 성공 여부
+     */
+    public boolean setThemeImage(String imagePath) {
+        return themeImagePanel.setImage(imagePath);
+    }
 }
