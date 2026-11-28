@@ -54,7 +54,7 @@ public class ThemeManager {
                 new Color(133, 116, 93),
                 new Color(221, 234, 241),
                 new Font(Font.DIALOG, Font.PLAIN, 14),
-                "TaskFlow/res/themes/ku.png"
+                "res/themes/ku.png"
         );
 
         addTheme(kuTheme);

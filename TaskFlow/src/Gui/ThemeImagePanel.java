@@ -38,6 +38,8 @@ public class ThemeImagePanel extends JPanel {
             return true;
         }
         try {
+            System.out.println("이미지 경로: " + imagePath);
+            System.out.println("파일 존재: " + new File(imagePath).exists());
             BufferedImage loadedImage = ImageIO.read(new File(imagePath));
             if (loadedImage == null) {
                 return false;
