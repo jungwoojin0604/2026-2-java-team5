@@ -27,9 +27,21 @@ public class CalendarPanel extends JPanel {
         setLayout(new BorderLayout());
         setBackground(Color.WHITE);
 
-        // 왼쪽 달력 영역
+
+        // 왼쪽 전체 영역
+        JPanel leftPanel = new JPanel(new BorderLayout());
+        leftPanel.setPreferredSize(new Dimension(420, 750));
+        leftPanel.setBackground(new Color(245, 245, 245));
+        leftPanel.setBorder(
+                BorderFactory.createEmptyBorder(10, 10, 0, 10)
+        );
+
+        // 달력을 왼쪽 상단에만 표시
         datePicker = new DatePickerPanel(LocalDate.now());
-        datePicker.setPreferredSize(new Dimension(420, 750));
+        datePicker.setPreferredSize(new Dimension(400, 320));
+
+        leftPanel.add(datePicker, BorderLayout.NORTH);
+
 
         // 오른쪽 할 일 목록 영역
         todoPanel = new TodoPanel(todoManager, projectManager);
@@ -39,8 +51,8 @@ public class CalendarPanel extends JPanel {
             todoPanel.setCurrentDate(datePicker.getSelectedDate());
         });
 
-        // 컴포넌트 배치
-        add(datePicker, BorderLayout.WEST);
+        // 왼쪽 달력 영역과 오른쪽 Todo 영역 배치
+        add(leftPanel, BorderLayout.WEST);
         add(todoPanel, BorderLayout.CENTER);
     }
 }

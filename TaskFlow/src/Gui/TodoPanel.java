@@ -73,6 +73,12 @@ public class TodoPanel extends JPanel {
         headerPanel.setBorder(BorderFactory.createEmptyBorder(15, 15, 15, 15));
         dateLabel = new JLabel(currentDate.toString());
         dateLabel.setFont(dateLabel.getFont().deriveFont(Font.BOLD, 18f));
+        // 날짜와 Anytime 버튼을 왼쪽에 배치
+        JPanel leftHeader = new JPanel(
+                new FlowLayout(FlowLayout.LEFT, 10, 0)
+        );
+        leftHeader.setBackground(Color.WHITE);
+        leftHeader.add(dateLabel);
 
         // 할 일 검색 입력창과 버튼
         searchField = new JTextField(12);
@@ -81,8 +87,6 @@ public class TodoPanel extends JPanel {
         // 검색 영역 생성
         JPanel searchPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 8, 0));
         searchPanel.setBackground(Color.WHITE);
-        searchPanel.add(searchField);
-        searchPanel.add(searchButton);
 
         // 할 일 추가 버튼
         JButton addTodoButton = new JButton("+");
@@ -97,7 +101,10 @@ public class TodoPanel extends JPanel {
                 )
         );
 
+        // Figma 순서: 추가 버튼 → 검색창 → 검색 버튼
         searchPanel.add(addTodoButton);
+        searchPanel.add(searchField);
+        searchPanel.add(searchButton);
 
         // Anytime 목록 전환 버튼
         anytimeButton = new JToggleButton("Anytime");
@@ -108,14 +115,15 @@ public class TodoPanel extends JPanel {
             );
             refreshTodoList();
         });
-        searchPanel.add(anytimeButton);
+        // Anytime 버튼을 날짜 옆에 배치
+        leftHeader.add(anytimeButton);
 
         // 검색 버튼 및 Enter 입력 이벤트
         searchButton.addActionListener(e -> refreshTodoList());
         searchField.addActionListener(e -> refreshTodoList());
 
         // 상단 영역 배치
-        headerPanel.add(dateLabel, BorderLayout.WEST);
+        headerPanel.add(leftHeader, BorderLayout.WEST);
         headerPanel.add(searchPanel, BorderLayout.EAST);
 
         add(headerPanel, BorderLayout.NORTH);
